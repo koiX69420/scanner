@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { token } = require('tmi.js/lib/utils');
+
 const bot = new TelegramBot(process.env.TG_BOT_TOKEN, { polling: true });
 const MAX_SUPPLY_DEFAULT = 1000000000
 const SOL_AMOUNT_THRESHOLD = 0.1
