@@ -1,0 +1,548 @@
+:root {
+    /* Global Variables */
+    --primary-font: Arial, sans-serif;
+    --header-height: 50px;
+    --sidebar-width: 300px;
+    --button-bg-color: #f1f1f1;
+    --button-hover-bg: #444;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    /* Soft shadow */
+    --button-radius: 30px;
+    --button-height: 40px;
+    --padding-small: 10px;
+    --padding-large: 20px;
+    --primary-color: #333;
+    /* Unified primary color */
+    --secondary-color: #fff;
+    /* Unified secondary color */
+}
+
+/* General Reset and Box Sizing */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body Setup */
+body {
+    font-family: var(--primary-font);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--button-bg-color);
+    border: 5px solid var(--border-color);
+}
+
+/* Header */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--header-height);
+    /* Adjust height */
+    background-color: var(--primary-color);
+
+}
+
+header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    color: var(--secondary-color);
+    /* Text color */
+}
+
+.social-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+
+}
+
+
+.social-links .social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary-color);
+    border-radius: 50%;
+    transition: background-color 0.3s, transform 0.3s ease-in-out;
+    text-decoration: none;
+}
+
+.social-links #copy-icon {
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    border-radius: 10%;
+    font-size: 12px;
+    color: var(--primary-color);
+    background-color: var(--secondary-color);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s ease-in-out;
+
+}
+
+.social-links #copy-icon:hover {
+    background-color: #b3afaf;
+    /* Hover color */
+    transform: scale(1.1);
+}
+
+.social-links .social-icon:hover {
+    color: #b3afaf;
+    /* Hover color */
+    transform: scale(1.1);
+}
+
+.social-links .social-icon i {
+    font-size: 24px;
+    /* Icon size */
+}
+/* Main Content Layout */
+#main-content {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+    height: calc(100vh - var(--header-height));
+}
+
+/* Sidebar */
+#sidebar {
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--button-bg-color);
+    /* Light background */
+    height: 100%;
+    overflow-y: auto;
+    border: 5px solid var(--border-color);
+    border-right: none;
+    border-left: none;
+}
+#user-count-and-ca {
+    display: flex;
+    flex-direction: column; /* Stack the elements vertically */
+    align-items: center; /* Center the items horizontally */
+    gap: 2px; /* Add space between the elements */
+}
+
+#ca {
+    font-size: 10px;
+    padding-bottom: 5px;
+}
+#user-count {
+    font-size: 12px;
+    padding-top:5px;
+    text-align: center;
+    font-weight: normal;
+}
+#desc-news{
+    font-style: italic;
+    font-size: 10;
+}
+#sidebar #news-report {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: var(--padding-large);
+    background-color: var(--button-bg-color);
+    /* Light background */
+}
+
+#sidebar #news-report h2 {
+    margin-bottom: var(--padding-small);
+    font-size: 18px;
+}
+
+#sidebar #news-report p {
+    margin-bottom: var(--padding-large);
+}
+
+/* Main Panel - Map and Social Buttons */
+#main-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 5px solid var(--border-color);
+    border-right: none;
+
+}
+
+/* Map and Buttons Container */
+#map-and-buttons {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* World Map */
+#world-map {
+    flex-grow: 1;
+    z-index: 1;
+
+    background-color: var(--button-bg-color);
+
+}
+
+#tooltip {
+    margin-top: 10px; /* Space between the map and tooltip */
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border-radius: var(--button-radius);
+    font-size: 14px;
+    position: relative;
+    text-align: center; /* Centers the text */
+    width: 100%; /* Tooltip takes up 90% of the container width */
+    font-weight: bold;
+    margin-left: auto; /* Center the tooltip horizontally */
+    margin-right: auto; /* Center the tooltip horizontally */
+}
+
+#tooltip li{
+    padding:5px;
+    font-weight: normal;
+
+}
+
+#desc{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-align: center;
+    border-top: 5px solid var(--border-color);
+    padding: 5px;
+
+
+}
+
+/* Social Buttons */
+#social-buttons-container {
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+    padding: var(--padding-small);
+    padding-left: 0px;
+    padding-right: 0px;
+    background-color: var(--button-bg-color);
+    text-align: center;
+}
+
+/* Individual Button Styles */
+.button-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32%;
+    height: var(--button-height);
+    padding: 8px 16px;
+    background-color: #aaaa31;
+    border-radius: var(--button-radius);
+    transition: background-color 0.3s, transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.7); /* Subtle shadow by default */
+}
+
+.button-wrapper .tooltip {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 5px 10px;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 10;
+    bottom: 110%; /* Position tooltip above the button */
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.button-wrapper:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.button-wrapper:hover {
+    background-color: #6e6e20;
+    transform: scale(1.1);
+}
+
+.button-wrapper a {
+    display: block;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary-color);
+    font-size: 18px;
+    text-decoration: none;
+}
+
+.button-wrapper:focus {
+    outline: none;
+}
+
+.button-wrapper i {
+    font-size: 22px;
+    margin-right: 8px;
+    color: var(--secondary-color);
+}
+
+.button-wrapper p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.button-wrapper:hover p {
+    color: #ccc;
+    transform: scale(1.1);
+}
+
+@media (max-width: 415px) {
+    header h1 {
+        font-size: 12px;
+
+    }
+}
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+
+    #social-buttons-container .button-wrapper a i {
+        margin-right: 10px;
+    }
+    #desc{
+        font-size: 12px;
+        font-weight: normal;
+    }
+
+
+    /* World Map */
+    #world-map {
+        flex-grow: 1;
+    }
+
+    /* Hide Sidebar */
+    #sidebar {
+        display: none;
+    }
+
+    /* Adjust header styles for smaller screens */
+    header {
+        height: var(--header-height);
+        /* Let the height adjust automatically */
+        padding: 5px;
+        /* Reduce padding */
+        border: 0px;
+        font-size: 12px;
+
+    }
+
+    .social-links {
+        gap: 5px;
+    }
+    .social-links .social-icon i {
+        font-size: 18px;    
+    }
+
+    .social-links #copy-icon {
+        width: 12px;
+        height: 12px;
+        font-size: 8px;
+    }
+
+}
+
+.leaflet-marker-icon span {
+    display: none !important;
+}
+.leaflet-tile { 
+    border: solid black 0.5px; }
+
+
+/* Responsive Design for Mobile */
+@media (max-width: 250px) {
+
+    /* Social Buttons */
+    #social-buttons-container .button-wrapper {
+        width: 45%;
+        height: 30px;
+    }
+}
+
+.pulsing-icon {
+    background: rgba(255, 0, 0, 0.9); /* Intense red */
+    border: 4px solid rgba(255, 255, 255, 0.8); /* White border for contrast */
+    border-radius: 50%; /* Circular shape */
+    width: 50px;
+    height: 50px;
+    animation: smooth-pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite; /* Smooth easing and infinite loop */
+    box-shadow: 0 0 30px rgba(255, 0, 0, 1), 
+                0 0 60px rgba(255, 0, 0, 0.8), 
+                0 0 90px rgba(255, 0, 0, 0.6); /* Glow effect */
+    transform-origin: center; /* Ensure smooth transition */
+}
+
+@keyframes smooth-pulse {
+    0% {
+        opacity: 1;
+        box-shadow: 0 0 30px rgba(255, 0, 0, 1), 
+                    0 0 60px rgba(255, 0, 0, 0.8), 
+                    0 0 90px rgba(255, 0, 0, 0.6);
+    }
+    50% {
+        opacity: 0.4; /* Slightly faded */
+        box-shadow: 0 0 50px rgba(255, 0, 0, 1), 
+                    0 0 100px rgba(255, 0, 0, 0.8), 
+                    0 0 150px rgba(255, 0, 0, 0.5); /* Expanding glow */
+    }
+    100% {
+        opacity: 1; /* Fade out completely */
+        box-shadow: 0 0 30px rgba(255, 0, 0, 1), 
+                    0 0 60px rgba(255, 0, 0, 0.8), 
+                    0 0 90px rgba(255, 0, 0, 0.6); /* Final glow effect */
+    }
+}
+
+/* Leaderboard Container */
+#leaderboard-container {
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* Toggle Button */
+.toggle-button {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-button:hover {
+    background-color: #444;
+}
+footer {
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+    padding: 10px 15px;
+    font-size: small;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Footer Content */
+footer {
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+    padding: 10px 15px;
+    font-size: small;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    height: 40px;
+
+}
+
+/* Footer Content */
+footer p {
+    margin: 0;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Leaderboard Container */
+#leaderboard-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* Leaderboard Toggle Button */
+.toggle-button {
+    background-color:  #aaaa31;
+    color: var(--secondary-color);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+    margin-left: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.7); /* Subtle shadow by default */
+
+}
+
+.toggle-button:hover {
+    background-color: #6e6e20;
+    transform: scale(1.05);
+}
+
+/* Leaderboard Box */
+#leaderboard {
+    position: absolute;
+    bottom: 40px; /* Leaves space for the footer text */
+    right: 0;
+    width: 80vw; /* 80% of the viewport width */
+    max-height: 300px; /* Maximum height */
+    overflow-y: auto; /* Scrollable content */
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    transform-origin: bottom; /* Set the folding origin to the bottom */
+    transform: scaleY(0); /* Initially hidden */
+    transition: transform 0.3s ease-out; /* Smooth folding animation */
+    z-index: 10;
+}
+
+#leaderboard.visible {
+    transform: scaleY(1); /* Expand the leaderboard */
+}
+
+#leaderboard h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+}
+
+#leaderboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+}
+
+#leaderboard-list li {
+    margin: 5px 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
