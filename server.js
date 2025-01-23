@@ -4,7 +4,7 @@ const http = require('http');
 
 require('dotenv').config();
 
-const heliosRoutes = require('./routes/heliusRoutes');
+const {getFreshness} = require('./controllers/heliusController');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,8 +12,6 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json()); // Für das Verarbeiten von JSON-Daten
 app.use(express.urlencoded({ extended: true })); // Für das Verarbeiten von URL-codierten Daten
 app.use(express.static(path.join(__dirname, 'frontend/public')));
-
-app.use("/api/helius", heliosRoutes); // Use the chat route under /api
 
 
 

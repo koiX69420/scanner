@@ -118,3 +118,6 @@ bot.onText(/\/fresh (.+)/, async (msg, match) => {
 });
 
 console.log("Telegram bot is running...");
+
+
+module.exports = {getFreshness};
