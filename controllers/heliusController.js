@@ -1,13 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const bot = new TelegramBot(process.env.TG_BOT_TOKEN, { polling: true });
 
+// Function to fetch freshness data
 async function getFreshness(tokenCa) {
   try {
-    console.log("Starting the getFreshness function...");
-    console.log(`Token CA: ${tokenCa}`);
-    
+    console.log(`Fetching freshness data for token: ${tokenCa}`);
+
     // Step 1: Get top token accounts
-    console.log("Fetching top token accounts...");
     const holdersResponse = await fetch(process.env.HELIUS_URL, {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
@@ -19,7 +18,6 @@ async function getFreshness(tokenCa) {
       }),
     });
     const holdersData = await holdersResponse.json();
-    console.log("Top token accounts fetched:", holdersData);
 
     if (!holdersData.result || !holdersData.result.value) {
       console.error("Error: Unexpected response for getTokenLargestAccounts", holdersData);
@@ -28,15 +26,12 @@ async function getFreshness(tokenCa) {
 
     const largestAccounts = holdersData.result.value;
 
-    // Step 2: Analyze each owner account
-    console.log(`Analyzing ${largestAccounts.length} token accounts for owner freshness...`);
+    // Step 2: Analyze each holder for owner freshness
     const freshnessData = await Promise.all(
-      largestAccounts.map(async (tokenAccount, index) => {
+      largestAccounts.map(async (tokenAccount) => {
         const tokenAccountAddress = tokenAccount.address;
-        console.log(`Processing token account ${index + 1}/${largestAccounts.length}: ${tokenAccountAddress}`);
 
-        // Fetch token account info to get the owner
-        console.log(`Fetching token account info for ${tokenAccountAddress}...`);
+        // Fetch token account info to get owner
         const accountInfoResponse = await fetch(process.env.HELIUS_URL, {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
@@ -51,18 +46,11 @@ async function getFreshness(tokenCa) {
           }),
         });
         const accountInfoData = await accountInfoResponse.json();
-        console.log(`Account info for token account ${tokenAccountAddress}:`, accountInfoData);
-
         const owner = accountInfoData.result?.value?.data?.parsed?.info?.owner;
-        if (!owner) {
-          console.error(`No owner found for token account ${tokenAccountAddress}`);
-          return { wallet: tokenAccountAddress, txCount: 0, creationTime: 'Unknown' };
-        }
 
-        console.log(`Owner of token account ${tokenAccountAddress}: ${owner}`);
+        if (!owner) return { wallet: tokenAccountAddress, txCount: 0, creationTime: 'Unknown' };
 
         // Fetch owner transaction history
-        console.log(`Fetching transaction history for owner ${owner}...`);
         const txResponse = await fetch(process.env.HELIUS_URL, {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
@@ -77,16 +65,9 @@ async function getFreshness(tokenCa) {
           }),
         });
         const txData = await txResponse.json();
-        console.log(`Transaction history for owner ${owner}:`, txData);
-
-        if (!txData.result) {
-          console.error(`Error fetching transaction history for owner ${owner}`, txData);
-          return { wallet: owner, txCount: 0, creationTime: 'Unknown' };
-        }
-
         const transactions = txData.result;
 
-        // Fetch first transaction to determine account creation time
+        // Fetch first transaction for creation time
         const creationTime = transactions.length > 0
           ? (await fetch(process.env.HELIUS_URL, {
               method: 'POST',
@@ -102,11 +83,6 @@ async function getFreshness(tokenCa) {
               .then(res => res.result?.blockTime || null)
           : null;
 
-        console.log(`Processed owner ${owner}:`, {
-          txCount: transactions.length,
-          creationTime: creationTime ? new Date(creationTime * 1000).toLocaleString() : 'Unknown',
-        });
-
         return {
           wallet: owner,
           txCount: transactions.length,
@@ -115,27 +91,30 @@ async function getFreshness(tokenCa) {
       })
     );
 
-    // Step 3: Format response
-    console.log("Formatting the response...");
-    const response = freshnessData
-      .map(data => {
-        return `Owner: ${data.wallet}\nTx Count: ${data.txCount}\nCreation Time: ${data.creationTime}\n`;
-      })
+    // Step 3: Format the response
+    return freshnessData
+      .map(data => `Owner: ${data.wallet}\nTx Count: ${data.txCount}\nCreation Time: ${data.creationTime}\n`)
       .join('\n');
-
-    console.log("Final response:", response);
-    return response;
   } catch (error) {
-    console.error("An error occurred in getFreshness:", error);
+    console.error("Error in getFreshness:", error);
     return 'Error fetching freshness data.';
   }
 }
 
-// Debug example
-getFreshness("8FRVErrkZx3s9WNEY7u8GTyWUJpgGx8JyWtuF428pump")
-  .then(console.log)
-  .catch(console.error);
+// Telegram bot command handler
+bot.onText(/\/fresh (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const tokenCa = match[1].trim();
 
-module.exports = {
-  getFreshness,
-};
+  if (!tokenCa) {
+    bot.sendMessage(chatId, "Please provide a valid token contract address (CA). Example: /fresh {tokenCa}");
+    return;
+  }
+
+  bot.sendMessage(chatId, "Fetching freshness data, please wait...");
+  const result = await getFreshness(tokenCa);
+
+  bot.sendMessage(chatId, result);
+});
+
+console.log("Telegram bot is running...");
