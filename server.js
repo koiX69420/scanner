@@ -4,7 +4,7 @@ const http = require('http');
 
 require('dotenv').config();
 
-const {getFreshness} = require('./controllers/heliusController');
+const {getFreshness} = require('./bot/bot');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
