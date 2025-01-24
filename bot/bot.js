@@ -3,10 +3,10 @@ const TelegramBot = require('node-telegram-bot-api');
 const bot = new TelegramBot(process.env.TG_BOT_TOKEN, { polling: true });
 const MAX_SUPPLY_DEFAULT = 1000000000
 const SOL_AMOUNT_THRESHOLD = 0.1
-const FRESH_THRESHHOLD = 100
+const FRESH_THRESHHOLD = 30
 const MAX_TX_LIMIT = 100
-const PUMPFUN_WALLET_ADDRESS="HhRw7gVbLigjwwuMw4PP5Gq8CYLoKBtSavs2ayuKvRjE"
-const maxRequestsPerSecond = 8; // Max requests per second
+const PUMPFUN_WALLET_ADDRESS = "HhRw7gVbLigjwwuMw4PP5Gq8CYLoKBtSavs2ayuKvRjE"
+const maxRequestsPerSecond =10; // Max requests per second
 const delayBetweenRequests = 1000 / maxRequestsPerSecond; // Delay between requests to stay within the rate limit
 // Create a rate-limited delay function
 function rateLimitRequest(delayTime, fn) {
@@ -215,9 +215,6 @@ async function fetchAndProcessTokenAccounts(tokenCa) {
           freshness.address = owner;
         }
       }, delayBetweenRequests);
-      if(freshness.address===PUMPFUN_WALLET_ADDRESS){
-        continue
-      }
 
       const transactions = await fetchTransactionHistory(freshness.address);
       const { txCount, solTransactions } = transactions;
@@ -269,8 +266,8 @@ async function calculateClusterPercentages(freshnessData, fundingMap) {
 
       clusterPercentages.push({
         sender,
-       recipients:[...recipients],
-        totalHoldings:totalHoldings.toFixed(2)
+        recipients: [...recipients],
+        totalHoldings: totalHoldings.toFixed(2)
       });
     }
 
@@ -283,12 +280,12 @@ async function calculateClusterPercentages(freshnessData, fundingMap) {
     return [];
   }
 }
-function getTransactionColor(txCount, maxTxCount = 100) {
+function getTransactionColor(txCount, maxTxCount = MAX_TX_LIMIT) {
   // Calculate the percentage based on txCount and maxTxCount
   const percentage = Math.min(100, Math.max(0, (txCount / maxTxCount) * 100)); // Ensure it's between 0 and 100
-  
+
   let color;
-  
+
   // Use the percentage to determine the color
   if (percentage === 0) {
     color = "🔴"; // Red for 0% activity
@@ -331,7 +328,7 @@ function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
   clusterPercentages.forEach((cluster, index) => {
     // Add sender and total holdings with sliced address and clickable
     message += `🧑‍💼 *Funding Wallet*: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})\n`;
-    message += `💼 *Cluster Holdings*: ${cluster.totalHoldings.toFixed(2)}%\n`;
+    message += `💼 *Cluster Holdings*: ${cluster.totalHoldings}%\n`;
 
     // List the recipients and their holdings, with sliced addresses and clickable
     message += `Recipients:\n`;
@@ -560,13 +557,14 @@ bot.onText(/\/fresh (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const tokenAddress = match[1];
 
-  bot.sendMessage(chatId, `Fetching freshness data for token: ${tokenAddress}...`);
+  bot.sendMessage(chatId, `Fetching data for token: ${tokenAddress}...\n Give me a minute or two`);
+  const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress)
+  const  clusterPercentages  = await calculateClusterPercentages(freshnessData, fundingMap)
+  // Dummy data generation (for debugging)
 
-// Dummy data generation (for debugging)
-const { freshnessData, clusterPercentages } = getDummyData();
-const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData,tokenAddress);
+  const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
 
-bot.sendMessage(chatId, telegramMessage, { parse_mode: "Markdown" });
+  bot.sendMessage(chatId, telegramMessage, { parse_mode: "Markdown" });
 });
 
 
