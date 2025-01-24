@@ -4,9 +4,8 @@ const bot = new TelegramBot(process.env.TG_BOT_TOKEN, { polling: true });
 const MAX_SUPPLY_DEFAULT = 1000000000
 const SOL_AMOUNT_THRESHOLD = 0.1
 const FRESH_THRESHHOLD = 30
-const MAX_TX_LIMIT = 100
-const PUMPFUN_WALLET_ADDRESS = "HhRw7gVbLigjwwuMw4PP5Gq8CYLoKBtSavs2ayuKvRjE"
-const maxRequestsPerSecond =10; // Max requests per second
+const MAX_TX_LIMIT = 20
+const maxRequestsPerSecond = 9; // Max requests per second
 const delayBetweenRequests = 1000 / maxRequestsPerSecond; // Delay between requests to stay within the rate limit
 // Create a rate-limited delay function
 function rateLimitRequest(delayTime, fn) {
@@ -41,7 +40,6 @@ async function fetchLargestTokenAccounts(tokenCa) {
       console.error("Unexpected response for getTokenLargestAccounts:", data);
       return [];
     }
-
     console.log(`Fetched ${data.result.value.length} largest token holders`);
     return data.result.value;
   } catch (error) {
@@ -305,8 +303,10 @@ function getTransactionColor(txCount, maxTxCount = MAX_TX_LIMIT) {
 }
 function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
   // Create the message header
-  let message = `🔹 *Top 19 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
+  let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n`;
 
+  // Add info about the possible pumpfun bonding curve
+  message += "ℹ️ The top token holder may represent the pumpfun bonding curve.\n\n";
   // Sort freshness data by holdings in descending order and get the top 20
   const topHolders = freshnessData
     .sort((a, b) => parseFloat(b.holding) - parseFloat(a.holding))
@@ -319,7 +319,13 @@ function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
     // Get the color based on txCount as percentage
     const txColor = getTransactionColor(holder.txCount);
 
-    message += `#*${String(index + 1).padEnd(3, ' ')}* [${holder.address.slice(0, 6)}](https://solscan.io/account/${holder.address})` + `- *${holder.holding}%* (${txColor} ${txCount})\n`;
+    // Check if this is the top holder
+    let pumpfunFlag = "";
+    if (index === 0) {
+      pumpfunFlag = "🔹 *Possible Pumpfun Bonding Curve*"; // Add the flag to the top holder
+    }
+
+    message += `#*${String(index + 1).padEnd(3, ' ')}* [${holder.address.slice(0, 6)}](https://solscan.io/account/${holder.address})` + `- *${holder.holding}%* (${txColor} ${txCount}) ${pumpfunFlag}\n`;
   });
   message += "\n---\n\n";
   message += "🔹 *Who funded whom?*\n\n";
@@ -557,9 +563,9 @@ bot.onText(/\/fresh (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const tokenAddress = match[1];
 
-  bot.sendMessage(chatId, `Fetching data for token: ${tokenAddress}...\n Give me a minute or two`);
+  bot.sendMessage(chatId, `Fetching freshness and cluster data for token: ${tokenAddress}...\n Give me a minute or two`);
   const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress)
-  const  clusterPercentages  = await calculateClusterPercentages(freshnessData, fundingMap)
+  const clusterPercentages = await calculateClusterPercentages(freshnessData, fundingMap)
   // Dummy data generation (for debugging)
 
   const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
