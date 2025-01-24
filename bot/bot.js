@@ -283,21 +283,78 @@ async function calculateClusterPercentages(freshnessData, fundingMap) {
     return [];
   }
 }
-function formatClusterMessage(clusterPercentages, freshnessData) {
-  // Create a header for the message
-  let message = "🔹 *Cluster Percentages Summary*\n\n";
+function getTransactionColor(txCount, maxTxCount = 100) {
+  // Calculate the percentage based on txCount and maxTxCount
+  const percentage = Math.min(100, Math.max(0, (txCount / maxTxCount) * 100)); // Ensure it's between 0 and 100
+  
+  let color;
+  
+  // Use the percentage to determine the color
+  if (percentage === 0) {
+    color = "🔴"; // Red for 0% activity
+  } else if (percentage <= 10) {
+    color = "🔴"; // Red for 0-10%
+  } else if (percentage <= 40) {
+    color = "🟠"; // Orange for 11-30%
+  } else if (percentage <= 90) {
+    color = "🟡"; // Yellow for 31-70%
+  } else if (percentage <= 99) {
+    color = "🟢"; // Green for 71-99%
+  } else {
+    color = "🟢"; // Dark Green for 100%
+  }
 
+  return color;
+}
+function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
+  // Create the message header
+  let message = `🔹 *Top 19 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
+
+  // Sort freshness data by holdings in descending order and get the top 20
+  const topHolders = freshnessData
+    .sort((a, b) => parseFloat(b.holding) - parseFloat(a.holding))
+    .slice(0, 20);
+
+  // Add top holders to the message
+  topHolders.forEach((holder, index) => {
+    const txCount = holder.txCount === 100 ? `>100 txs` : `${holder.txCount} txs`;
+
+    // Get the color based on txCount as percentage
+    const txColor = getTransactionColor(holder.txCount);
+
+    message += `#*${String(index + 1).padEnd(3, ' ')}* [${holder.address.slice(0, 6)}](https://solscan.io/account/${holder.address})` + `- *${holder.holding}%* (${txColor} ${txCount})\n`;
+  });
+  message += "\n---\n\n";
+  message += "🔹 *Who funded whom?*\n\n";
+
+  // Add cluster data
   clusterPercentages.forEach((cluster, index) => {
     // Add sender and total holdings with sliced address and clickable
-    message += `🧑‍💼 *Sender*: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})\n`;
-    message += `💼 *Total Holdings*: ${cluster.totalHoldings}%\n`;
-    
+    message += `🧑‍💼 *Funding Wallet*: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})\n`;
+    message += `💼 *Cluster Holdings*: ${cluster.totalHoldings.toFixed(2)}%\n`;
+
     // List the recipients and their holdings, with sliced addresses and clickable
     message += `Recipients:\n`;
     cluster.recipients.forEach((recipient) => {
       const recipientData = freshnessData.find(item => item.address === recipient);
       const holding = recipientData ? recipientData.holding : "N/A"; // Get recipient holding
-      message += `   - [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*\n`;
+      let txCount = recipientData ? recipientData.txCount : "N/A"; // Get recipient tx count
+
+
+      // Find ranking of the recipient in the top holders list
+      const ranking = topHolders.findIndex(holder => holder.address === recipient) + 1;
+      const rankingText = ranking > 0 ? `#*${ranking}*` : ""; // Format ranking as bold number in brackets
+
+      // Get the color for the recipient's txCount as percentage
+      const txColor = getTransactionColor(txCount);
+      // Add '>' for txCount > 100
+      if (txCount !== "N/A" && txCount > 100) {
+        txCount = `>${txCount} txs`;
+      } else {
+        txCount = `${txCount} txs`;
+      }
+      // Adding cleaner spacing between values
+      message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*  (${txColor} ${txCount} txs)\n`;
     });
 
     message += "\n";
@@ -507,7 +564,7 @@ bot.onText(/\/fresh (.+)/, async (msg, match) => {
 
 // Dummy data generation (for debugging)
 const { freshnessData, clusterPercentages } = getDummyData();
-const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData);
+const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData,tokenAddress);
 
 bot.sendMessage(chatId, telegramMessage, { parse_mode: "Markdown" });
 });
