@@ -4,7 +4,9 @@ const http = require('http');
 
 require('dotenv').config();
 
-const {getFreshness} = require('./bot/bot');
+require('./bot/freshness');
+require('./bot/scanner');
+require('./util/util');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
