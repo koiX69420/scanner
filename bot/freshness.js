@@ -77,7 +77,7 @@ async function sendFreshnessWithButton(chatId, tokenAddress) {
         [
           {
             text: '🔄 Refresh Data', // Text of the button
-            callback_data: `refresh_${tokenAddress}` // Unique identifier for the button
+            callback_data: `refreshfreshness_${tokenAddress}` // Unique identifier for the button
           }
         ]
       ]
@@ -117,7 +117,7 @@ async function sendFreshnessWithButton(chatId, tokenAddress) {
     const chatId = query.message.chat.id;
     const tokenAddress = query.data.split('_')[1]; // Extract the token address from the callback data
   
-    if (query.data.startsWith('refresh_')) {
+    if (query.data.startsWith('refreshfreshness_')) {
       try {
         // Answer the callback query to acknowledge the press
         bot.answerCallbackQuery(query.id, { text: 'Refreshing data...', show_alert: false });

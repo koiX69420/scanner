@@ -219,6 +219,29 @@ function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
   return message;
 }
 
+// Function to send the message with the refresh button
+async function sendFundingWithButton(chatId, tokenAddress) {
+  // Fetch the latest data
+  const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress);
+  const clusterPercentages = await calculateClusterPercentages(freshnessData, fundingMap);
+  // Format the message for clusters and freshness
+  const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        {
+          text: '🔄 Refresh Data', // Text of the button
+          callback_data: `refreshfunding_${tokenAddress}` // Unique identifier for the button
+        }
+      ]
+    ]
+  };
+
+  bot.sendMessage(chatId, telegramMessage, {
+    parse_mode: 'Markdown',
+    reply_markup: replyMarkup
+  });
+}
 
 bot.onText(/\/funding (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
@@ -234,54 +257,33 @@ bot.onText(/\/funding (.+)/, async (msg, match) => {
 
   bot.sendMessage(chatId, `Fetching freshness and cluster data for token: ${tokenAddress}...\n Give me a minute or two`);
 
-  // Fetch freshness data and cluster information
-  const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress);
-  const clusterPercentages = await calculateClusterPercentages(freshnessData, fundingMap);
-
-  // Format the message for clusters and freshness
-  const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
-
-  // Create inline keyboard with a "Refresh Data" button
-  const inlineKeyboard = {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "🔄 Refresh Data",
-            callback_data: `refresh_${tokenAddress}`  // Unique callback data to identify this refresh action
-          }
-        ]
-      ]
-    }
-  };
-
-  // Send the initial message with the button
-  bot.sendMessage(chatId, telegramMessage, { parse_mode: "Markdown", ...inlineKeyboard });
+  try {
+    sendFundingWithButton(chatId, tokenAddress); // Send the data along with the refresh button
+  } catch (error) {
+    bot.sendMessage(chatId, "❌ An error occurred while processing the request. Please try again later.");
+    console.error("Error in /fresh command:", error.message);
+  }
 });
 
 // Handle the "Refresh Data" button press
-bot.on('callback_query', async (callbackQuery) => {
-  const chatId = callbackQuery.message.chat.id;
-  const messageId = callbackQuery.message.message_id;
-  const tokenAddress = callbackQuery.data.split('_')[1];  // Extract the token address from callback data
+bot.on('callback_query', async (query) => {
+  const chatId = query.message.chat.id;
+  const tokenAddress = query.data.split('_')[1]; // Extract the token address from the callback data
 
-  // Fetch the latest data
-  const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress);
-  const clusterPercentages = await calculateClusterPercentages(freshnessData, fundingMap);
+  if (query.data.startsWith('refreshfunding_')) {
+    try {
+      // Answer the callback query to acknowledge the press
+      bot.answerCallbackQuery(query.id, { text: 'Refreshing data...', show_alert: false });
+      bot.sendMessage(chatId, "Refreshing Data...");
 
-  // Format the updated message
-  const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
+      // Re-fetch and send the updated data with the refresh button again
+      sendFundingWithButton(chatId, tokenAddress);
 
-  // Send the updated message with the "Refresh Data" button again
-  bot.editMessageText(telegramMessage, {
-    chat_id: chatId,
-    message_id: messageId,
-    parse_mode: "Markdown",
-    ...inlineKeyboard.reply_markup  // Include the inline keyboard again
-  });
-
-  // Acknowledge the callback query to remove the loading state
-  bot.answerCallbackQuery(callbackQuery.id);
+    } catch (error) {
+      console.error("Error handling refresh:", error);
+      bot.sendMessage(chatId, "❌ An error occurred while refreshing data. Please try again later.");
+    }
+  }
 });
 
 
