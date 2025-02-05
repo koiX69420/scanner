@@ -25,7 +25,6 @@ async function fetchTopHolders(tokenAddress) {
     const response = await fetch(url, requestOptions)
 
     const text = await response.text(); // Read raw response
-    console.log(`🔍 Raw API Response: ${text}`);
 
     const data = JSON.parse(text);
     if (!data.success || !data.data || !data.data.items) {
@@ -77,7 +76,6 @@ async function fetchTokenMetadata(tokenAddress) {
 
 
 async function fetchDefiActivities(walletAddress, tokenAddress) {
-  console.log(`🔄 Fetching DeFi activities for wallet: ${walletAddress}`);
 
   try {
     const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
@@ -111,7 +109,6 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
       }
     });
 
-    console.log(`✅ DeFi activities fetched for ${walletAddress}: Buys=${buys}, Sells=${sells}`);
     return { buys, sells, totalBought, totalSold };
 
   } catch (error) {
@@ -157,7 +154,6 @@ async function getTokenHolderData(tokenAddress) {
     })
   );
 
-  console.log(`✅ Completed processing holders for token: ${tokenAddress}`);
   return holderData;
 }
 
@@ -170,12 +166,12 @@ function formatHolderData(holdersData, tokenCa) {
   let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
 
   // Add a header line for each column
-  message += `Rank  | Address             | Holding (%) | Buys | Sells | Total Bought (%) | Total Sold (%)\n`;
+  message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | 🛒 Buys | 🏷️ Sells | 💰 Total Bought (%) | 🔄 Total Sold (%)\n`;
   message += `--------------------------------------------------------------------------\n`;
 
   // Loop through each holder and format the row
   holdersData.forEach((holder) => {
-    message += `${holder.Rank}    | [${holder.Address.slice(0, 6)}...](https://solscan.io/account/${holder.Address}) | ${holder["Current Holding (%)"]}%  | ${holder["Total Buys"]}   | ${holder["Total Sells"]}   | ${holder["Total Bought (%)"]}%   | ${holder["Total Sold (%)"]}%\n`;
+    message += `${holder.Rank} | [${holder.Address.slice(0, 3)}](https://solscan.io/account/${holder.Address}) | 📊 ${holder["Current Holding (%)"]}% | 🛒 ${holder["Total Buys"]} | 🏷️ ${holder["Total Sells"]} | 💰 ${holder["Total Bought (%)"]}% | 🔄 ${holder["Total Sold (%)"]}%\n`;
   });
 
   return message;
@@ -200,30 +196,8 @@ async function sendMessageWithButton(chatId, tokenAddress) {
   // Send the message with data and the refresh button, and return the message ID
   return bot.sendMessage(chatId, telegramMessage, {
     parse_mode: 'Markdown',
-    reply_markup: replyMarkup
-  });
-}
-
-// Function to send the initial message with the refresh button
-async function sendMessageWithButton(chatId, tokenAddress) {
-  // Fetch the latest data
-  const holderData = await getTokenHolderData(tokenAddress);
-  const telegramMessage = formatHolderData(holderData, tokenAddress);
-  const replyMarkup = {
-    inline_keyboard: [
-      [
-        {
-          text: '🔄 Refresh Data', // Text of the button
-          callback_data: `refresh_${tokenAddress}` // Unique identifier for the button
-        }
-      ]
-    ]
-  };
-
-  // Send the message with data and the refresh button, and return the message ID
-  return bot.sendMessage(chatId, telegramMessage, {
-    parse_mode: 'Markdown',
-    reply_markup: replyMarkup
+    reply_markup: replyMarkup,
+    disable_web_page_preview: true // Prevents URL preview
   });
 }
 
@@ -238,7 +212,6 @@ bot.on("message", async (msg) => {
   }
 
   const chatId = msg.chat.id;
-  console.log(`📩 Received Solana address from user: ${tokenAddress}`);
 
   // Send a message indicating that data is being fetched
   const loadingMessage = await bot.sendMessage(chatId, `🔍 Fetching data for *${tokenAddress}*...\nPlease wait...`, { parse_mode: "Markdown" });
