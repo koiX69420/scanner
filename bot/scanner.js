@@ -97,7 +97,7 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
           // Checking if tokenAddress is part of the swap and incrementing buys/sells accordingly
           if (token1 === tokenAddress) {
             sells++; // Swapping out the tokenAddress
-            totalBought += router.amount1 || 0; // Accumulate the amount of token2 (the bought token)
+            totalSold += router.amount1 || 0; // Accumulate the amount of token2 (the bought token)
 
           } else if (token2 === tokenAddress) {
             buys++; // Receiving the tokenAddress
@@ -165,18 +165,18 @@ function formatHolderData(holdersData, tokenCa) {
   let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
 
   // Use triple backticks to format the table as monospace
-  message += "```\n"; // Start monospace block
+  message += "\n"; // Start monospace block
 
   // Add a header line for each column
-  message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | 🟢 Buys | 🔴 Sells | ⬆️ Total Bought (%) | ⬇️ Total Sold (%)\n`;
+  message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | ⬆️ Buys | ⬇️ Sells | 🟢 Total Bought (%) | 🔴 Total Sold (%)\n`;
   message += `--------------------------------------------------------------------------------------\n`;
 
   // Loop through each holder and format the row
   holdersData.forEach((holder) => {
-    message += `${holder.Rank.toString().padEnd(2)} | ${holder.Address.slice(0, 3).padEnd(1)} | ${holder["Current Holding (%)"].toString().padEnd(4)} | 🟢 ${holder["Total Buys"].toString().padEnd(1)} | 🔴 ${holder["Total Sells"].toString().padEnd(1)} | ⬆️ ${holder["Total Bought (%)"].toString().padEnd(4)} | ⬇️ ${holder["Total Sold (%)"].toString().padEnd(4)}\n`;
+    message += `${holder.Rank.toString().padEnd(2)} | [${holder.Address.slice(0, 3).padEnd(1)}](https://solscan.io/account/${holder.Address}) | ${holder["Current Holding (%)"].toString().padEnd(4)} | ⬆️ ${holder["Total Buys"].toString().padEnd(1)} | ⬇️ ${holder["Total Sells"].toString().padEnd(1)} | 🟢 ${holder["Total Bought (%)"].toString().padEnd(4)} | 🔴 ${holder["Total Sold (%)"].toString().padEnd(4)}\n`;
   });
 
-  message += "```"; // End monospace block
+  message += ""; // End monospace block
 
   return message;
 }
