@@ -1,264 +1,256 @@
-const bot = require("../tg/tg")
-const { SOL_AMOUNT_THRESHOLD, MAX_TX_LIMIT, delayBetweenRequests, FRESH_THRESHHOLD } = require('../config/config');
+require("dotenv").config();
+const bot = require("../tg/tg");
+const Table = require("cli-table3");
 
-const { fetchLargestTokenAccounts, getSupply, fetchAccountOwner, fetchWithRateLimit, fetchTransactionHistory, getTransactionColor, getTransaction,formatFreshnessMessage } = require("../util/util"); // Adjust the path as needed
+const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-// Fetch transaction history for an address
-async function getSolTransactions(transactions, address) {
+async function fetchTopHolders(tokenAddress) {
+  console.log(`🔄 Fetching top holders for token: ${tokenAddress}`);
 
-  try {
-    const solTransactions = []
-
-    // Extract SOL transfer details
-    for (const tx of transactions) {
-      // Introduce rate limiting by delaying requests
-      await fetchWithRateLimit(async () => {
-        const transaction = await getTransaction(tx);
-
-        if (transaction && transaction.meta) {
-          const { preBalances, postBalances } = transaction.meta;
-          const accountKeys = transaction.transaction.message.accountKeys;
-          // Calculate SOL transferred to the address
-          const recipientIndex = accountKeys.findIndex(key => key.pubkey === address);
-          if (recipientIndex !== -1 && preBalances && postBalances) {
-            const solTransferred = (postBalances[recipientIndex] - preBalances[recipientIndex]) / 1000000000; // Convert lamports to SOL
-
-            if (solTransferred > SOL_AMOUNT_THRESHOLD) {
-              solTransactions.push({
-                signature: tx.signature,
-                blockTime: transaction.blockTime,
-                sender: accountKeys[0], // Typically, the first key is the sender
-                recipient: address,
-                solAmount: solTransferred,
-              });
-            }
-          }
-        }
-      }, delayBetweenRequests); // Control the rate of requests
-    }
-    return solTransactions;
-  } catch (error) {
-    console.error(`Error fetching transaction history for ${address}:`, error);
-    return { txCount: 0, transaction: [], mostRecentSolTx: null }; // Return 0 count and empty list on error
+  if (!tokenAddress) {
+    console.error("❌ Error: tokenAddress is missing or undefined.");
+    return [];
   }
-}
 
-// Separate function for fetching and processing token accounts
-async function fetchAndProcessTokenAccounts(tokenCa) {
   try {
-    console.log(`Fetching and processing token accounts for token: ${tokenCa}`);
+    const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=1&page_size=10`;
+    console.log(`📡 API Request URL: ${url}`);
 
-    // Fetch largest token accounts
-    let largestAccounts = [];
-    await fetchWithRateLimit(async () => {
-      largestAccounts = await fetchLargestTokenAccounts(tokenCa);
-      if (largestAccounts.length === 0) {
-        console.log("No token accounts found.");
-        return [];
-      }
-    }, delayBetweenRequests);
-
-
-
-    let maxSupply = 1000000000;
-    await fetchWithRateLimit(async () => {
-      maxSupply = await getSupply(tokenCa);
-    }, delayBetweenRequests);
-
-
-    // Process each token account
-    const freshnessData = [];
-    const fundingMap = {}; // Map to group funding wallets for clustering
-
-    for (let i = 0; i < largestAccounts.length; i++) {
-      const tokenAccount = largestAccounts[i];
-      const tokenAccountAddress = tokenAccount.address;
-
-      const freshness = {
-        holding: ((tokenAccount.uiAmount / maxSupply) * 100).toFixed(2),
-        address: tokenAccountAddress,
-        txCount: 0,
-      };
-
-      // Fetch account owner with rate limiting
-      await fetchWithRateLimit(async () => {
-        const owner = await fetchAccountOwner(tokenAccountAddress);
-        if (owner) {
-          freshness.address = owner;
-        }
-      }, delayBetweenRequests);
-
-      let transactions = []
-      await fetchWithRateLimit(async () => {
-        transactions = await fetchTransactionHistory(freshness.address, MAX_TX_LIMIT);
-        if (transactions) {
-          freshness.txCount = transactions.length;
-        }
-      }, delayBetweenRequests);
-
-      let solTransactions = []
-      if(freshness.txCount<FRESH_THRESHHOLD){
-        await fetchWithRateLimit(async () => {
-          solTransactions = await getSolTransactions(transactions, freshness.address);
-        }, delayBetweenRequests);
-      }
-
-
-      // Populate funding map for clustering
-      if (solTransactions.length > 0) {
-        for (const transaction of solTransactions) {
-          const sender = transaction.sender.pubkey;
-
-          if (!fundingMap[sender]) {
-            fundingMap[sender] = new Set();
-          }
-          fundingMap[sender].add(freshness.address);
-        }
-      }
-
-      freshnessData.push(freshness);
+    const requestOptions = {
+      method: "get",
+      headers: { "token": SOLSCAN_API_KEY }
     }
 
-    return { freshnessData, fundingMap };
-  } catch (error) {
-    console.error("Error fetching and processing token accounts:", error);
-    return { freshnessData: [], fundingMap: {} };
-  }
-}
+    const response = await fetch(url, requestOptions)
 
-// Separate function for calculating cluster percentages
-async function calculateClusterPercentages(freshnessData, fundingMap) {
-  try {
-    console.log(`Calculating cluster percentages...`);
+    const text = await response.text(); // Read raw response
+    console.log(`🔍 Raw API Response: ${text}`);
 
-    const clusterPercentages = [];
-    const totalWallets = freshnessData.length;
-
-    // Calculate percentage for each sender
-    for (const [sender, recipients] of Object.entries(fundingMap)) {
-
-      let totalHoldings = 0;
-
-      // Calculate the sum of holdings for all recipients
-      recipients.forEach((recipient) => {
-        const freshness = freshnessData.find((item) => item.address === recipient);
-        if (freshness) {
-          totalHoldings += parseFloat(freshness.holding); // Add recipient's holding percentage
-        }
-      });
-
-      clusterPercentages.push({
-        sender,
-        recipients: [...recipients],
-        totalHoldings: totalHoldings.toFixed(2)
-      });
+    const data = JSON.parse(text);
+    if (!data.success || !data.data || !data.data.items) {
+      console.error("⚠️ Unexpected API response format:", data);
+      return [];
     }
 
-    // Sort clusters by total holdings percentage (descending)
-    clusterPercentages.sort((a, b) => b.totalHoldings - a.totalHoldings);
+    // Extract relevant information
+    const holders = data.data.items.map(holder => ({
+      address: holder.address,
+      amount: holder.amount,
+      decimals: holder.decimals,
+      owner: holder.owner,
+      rank: holder.rank,
+    }));
 
-    return clusterPercentages;
+    console.log(`✅ Successfully fetched ${holders.length} holders for ${tokenAddress}`);
+    return holders;
+
   } catch (error) {
-    console.error("Error calculating cluster percentages:", error);
+    console.error(`❌ Error fetching holders for ${tokenAddress}:`, error.message);
     return [];
   }
 }
-function formatClusterMessage(clusterPercentages, freshnessData, tokenCa) {
-  let message = ""
-  const {freshnessMessage,topHolders} = formatFreshnessMessage(freshnessData,tokenCa,MAX_TX_LIMIT)
-  // Add info about the possible pumpfun bonding curve
-  message += freshnessMessage
 
-  message += "\n---\n\n";
-  message += "🔹 *Who funded whom?*\n\n";
+async function fetchTokenMetadata(tokenAddress) {
+  console.log(`🔄 Fetching metadata for token: ${tokenAddress}`);
 
-  // Add cluster data
-  clusterPercentages.forEach((cluster, index) => {
-    // Add sender and total holdings with sliced address and clickable
-    const senderData = freshnessData.find(item => item.address === cluster.sender);
-    const senderHolding = senderData ? senderData.holding : "N/A"; // Get sender holding
-    message += `🧑‍💼 *Funding Wallet*: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})`;
+  try {
+    const url = `https://pro-api.solscan.io/v2.0/token/meta?address=${encodeURIComponent(tokenAddress)}`;
+    const requestOptions = {
+      method: "get",
+      headers: { "token": SOLSCAN_API_KEY }
+    };
+    const response = await fetch(url, requestOptions);
+    const data = await response.json();
 
-    // Add the funding wallet's holding percentage (if available) right next to the sender
-    if (senderHolding !== "N/A") {
-      message += ` - * - ${senderHolding}%*`;
+    if (data.success && data.data && data.data.supply) {
+      return data.data.supply; // Return total supply
+    } else {
+      console.error(`❌ Error fetching token metadata: Invalid response`);
+      return 1; // Default to 1 to avoid division by zero
     }
-    message += "\n"; // New line after funding wallet
+  } catch (error) {
+    console.error(`❌ Error fetching token metadata for ${tokenAddress}:`, error.message);
+    return 1; // Default to 1 to avoid division by zero
+  }
+}
 
-    // Calculate the total cluster holdings including the funding wallet holdings
-    const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
-    message += `💼 *Cluster Holdings*: ${totalClusterHoldings}%\n`;
 
-    // List the recipients and their holdings, with sliced addresses and clickable
-    message += `Recipients:\n`;
-    cluster.recipients.forEach((recipient) => {
-      const recipientData = freshnessData.find(item => item.address === recipient);
-      const holding = recipientData ? recipientData.holding : "N/A"; // Get recipient holding
-      let txCount = recipientData ? recipientData.txCount : "N/A"; // Get recipient tx count
+async function fetchDefiActivities(walletAddress, tokenAddress) {
+  console.log(`🔄 Fetching DeFi activities for wallet: ${walletAddress}`);
 
-      // Find ranking of the recipient in the top holders list
-      const ranking = topHolders.findIndex(holder => holder.address === recipient) + 1;
-      const rankingText = ranking > 0 ? `#*${ranking}*` : ""; // Format ranking as bold number in brackets
+  try {
+    const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
 
-      // Get the color for the recipient's txCount as percentage
-      const txColor = getTransactionColor(txCount);
-      // Add '>' for txCount > 100
-      if (txCount !== "N/A" && txCount >= MAX_TX_LIMIT) {
-        txCount = `more than ${txCount}`;
-      } else {
-        txCount = `${txCount}`;
+    const requestOptions = {
+      method: "get",
+      headers: { "token": SOLSCAN_API_KEY }
+    };
+
+    const response = await fetch(url, requestOptions);
+    const data = await response.json();
+    const activities = data?.data || [];
+    let buys = 0, sells = 0, totalBought = 0, totalSold = 0;
+
+    activities.forEach((tx) => {
+      if (tx.routers) {
+        const routers = Array.isArray(tx.routers) ? tx.routers : [tx.routers];
+        routers.forEach((router) => {
+          const { token1, token2 } = router;
+          // Checking if tokenAddress is part of the swap and incrementing buys/sells accordingly
+          if (token1 === tokenAddress) {
+            sells++; // Swapping out the tokenAddress
+            totalBought += router.amount1 || 0; // Accumulate the amount of token2 (the bought token)
+
+          } else if (token2 === tokenAddress) {
+            buys++; // Receiving the tokenAddress
+            totalBought += router.amount2 || 0; // Accumulate the amount of token2 (the bought token)
+
+          }
+        });
       }
-
-      // Adding cleaner spacing between values
-      message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*  (${txColor} ${txCount} txs)\n`;
     });
 
-    message += "\n";
+    console.log(`✅ DeFi activities fetched for ${walletAddress}: Buys=${buys}, Sells=${sells}`);
+    return { buys, sells, totalBought, totalSold };
+
+  } catch (error) {
+    console.error(`❌ Error fetching activity for ${walletAddress}:`, error.message);
+    return { buys: 0, sells: 0 };
+  }
+}
+
+async function getTokenHolderData(tokenAddress) {
+  console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
+  const holders = await fetchTopHolders(tokenAddress);
+  if (!holders.length) {
+    console.log(`⚠️ No holders found for token: ${tokenAddress}`);
+    return [];
+  }
+
+  const totalSupply = await fetchTokenMetadata(tokenAddress);
+  if (totalSupply === 1) {
+    console.log(`⚠️ Invalid supply value for token: ${tokenAddress}`);
+    return [];
+  }
+
+  const holderData = await Promise.all(
+    holders.map(async (holder) => {
+      const address = holder.owner;
+      // Fetch buy/sell data and total bought and sold data independently for each holder
+      const { buys, sells, totalBought, totalSold } = await fetchDefiActivities(address, tokenAddress);
+
+      // Calculating the percentage of total supply for tokens bought and sold by this holder
+      const totalBoughtPercentage = ((totalBought / totalSupply) * 100).toFixed(2);
+      const totalSoldPercentage = ((totalSold / totalSupply) * 100).toFixed(2);
+
+      // Returning the processed data for each holder
+      return {
+        Rank: holder.rank,
+        Address: `${address}`, // Shortened for readability
+        "Current Holding (%)": ((holder.amount / totalSupply) * 100).toFixed(2),
+        "Total Buys": buys,
+        "Total Sells": sells,
+        "Total Bought (%)": totalBoughtPercentage, // Add the new value for bought percentage
+        "Total Sold (%)": totalSoldPercentage, // Add the new value for sold percentage
+      };
+    })
+  );
+
+  console.log(`✅ Completed processing holders for token: ${tokenAddress}`);
+  return holderData;
+}
+
+function formatHolderData(holdersData, tokenCa) {
+  if (!holdersData.length) {
+    return "❌ No data available for this token.";
+  }
+
+  // Start the message with a header
+  let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
+
+  // Add a header line for each column
+  message += `Rank  | Address             | Holding (%) | Buys | Sells | Total Bought (%) | Total Sold (%)\n`;
+  message += `--------------------------------------------------------------------------\n`;
+
+  // Loop through each holder and format the row
+  holdersData.forEach((holder) => {
+    message += `${holder.Rank}    | [${holder.Address.slice(0, 6)}...](https://solscan.io/account/${holder.Address}) | ${holder["Current Holding (%)"]}%  | ${holder["Total Buys"]}   | ${holder["Total Sells"]}   | ${holder["Total Bought (%)"]}%   | ${holder["Total Sold (%)"]}%\n`;
   });
 
   return message;
 }
 
-// Function to send the message with the refresh button
-async function sendFundingWithButton(chatId, tokenAddress) {
+// Function to send the initial message with the refresh button
+async function sendMessageWithButton(chatId, tokenAddress) {
   // Fetch the latest data
-  const { freshnessData, fundingMap } = await fetchAndProcessTokenAccounts(tokenAddress);
-  const clusterPercentages = await calculateClusterPercentages(freshnessData, fundingMap);
-  // Format the message for clusters and freshness
-  const telegramMessage = formatClusterMessage(clusterPercentages, freshnessData, tokenAddress);
+  const holderData = await getTokenHolderData(tokenAddress);
+  const telegramMessage = formatHolderData(holderData, tokenAddress);
   const replyMarkup = {
     inline_keyboard: [
       [
         {
           text: '🔄 Refresh Data', // Text of the button
-          callback_data: `refreshfunding_${tokenAddress}` // Unique identifier for the button
+          callback_data: `refresh_${tokenAddress}` // Unique identifier for the button
         }
       ]
     ]
   };
 
-  bot.sendMessage(chatId, telegramMessage, {
+  // Send the message with data and the refresh button, and return the message ID
+  return bot.sendMessage(chatId, telegramMessage, {
     parse_mode: 'Markdown',
     reply_markup: replyMarkup
   });
 }
 
-bot.onText(/\/funding (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const tokenAddress = match[1];
+// Function to send the initial message with the refresh button
+async function sendMessageWithButton(chatId, tokenAddress) {
+  // Fetch the latest data
+  const holderData = await getTokenHolderData(tokenAddress);
+  const telegramMessage = formatHolderData(holderData, tokenAddress);
+  const replyMarkup = {
+    inline_keyboard: [
+      [
+        {
+          text: '🔄 Refresh Data', // Text of the button
+          callback_data: `refresh_${tokenAddress}` // Unique identifier for the button
+        }
+      ]
+    ]
+  };
 
-  // Regular expression to validate Solana token address
-  const solanaAddressRegex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  // Send the message with data and the refresh button, and return the message ID
+  return bot.sendMessage(chatId, telegramMessage, {
+    parse_mode: 'Markdown',
+    reply_markup: replyMarkup
+  });
+}
 
-  if (!solanaAddressRegex.test(tokenAddress)) {
-    bot.sendMessage(chatId, "❌ Invalid Solana token address. Please check and try again.");
+// Listen for Solana token addresses in messages
+bot.on("message", async (msg) => {
+  if (!msg.text) return; // Ensure it's a text message
+
+  const tokenAddress = msg.text.trim();
+  if (!SOLANA_ADDRESS_REGEX.test(tokenAddress)) {
+    bot.sendMessage(msg.chat.id, `Send me a valid Solana token address`, { parse_mode: "Markdown" });
     return;
   }
 
-  bot.sendMessage(chatId, `Fetching freshness and cluster data for token: ${tokenAddress}...\n Give me a minute or two`);
+  const chatId = msg.chat.id;
+  console.log(`📩 Received Solana address from user: ${tokenAddress}`);
+
+  // Send a message indicating that data is being fetched
+  const loadingMessage = await bot.sendMessage(chatId, `🔍 Fetching data for *${tokenAddress}*...\nPlease wait...`, { parse_mode: "Markdown" });
 
   try {
-    sendFundingWithButton(chatId, tokenAddress); // Send the data along with the refresh button
+    // Send the data along with the refresh button, and store the sent message's ID
+    const sentMessage = await sendMessageWithButton(chatId, tokenAddress);
+
+    // Optionally, delete the loading message once the data is ready
+    await bot.deleteMessage(chatId, loadingMessage.message_id);
+
+    console.log(`📤 Sent data to user for token: ${tokenAddress}`);
   } catch (error) {
     bot.sendMessage(chatId, "❌ An error occurred while processing the request. Please try again later.");
     console.error("Error in /fresh command:", error.message);
@@ -270,15 +262,45 @@ bot.on('callback_query', async (query) => {
   const chatId = query.message.chat.id;
   const tokenAddress = query.data.split('_')[1]; // Extract the token address from the callback data
 
-  if (query.data.startsWith('refreshfunding_')) {
+  if (query.data.startsWith('refresh_')) {
     try {
       // Answer the callback query to acknowledge the press
       bot.answerCallbackQuery(query.id, { text: 'Refreshing data...', show_alert: false });
-      bot.sendMessage(chatId, "Refreshing Data...");
 
-      // Re-fetch and send the updated data with the refresh button again
-      sendFundingWithButton(chatId, tokenAddress);
+      // Fetch the latest data
+      const holderData = await getTokenHolderData(tokenAddress);
+      const formattedMessage = formatHolderData(holderData, tokenAddress);
 
+      // Check if the new data is the same as the old one
+      const currentMessage = query.message.text;
+
+      // If the new message content is identical, do not update the message
+      if (formattedMessage === currentMessage) {
+        console.log("No update needed. Data is the same.");
+        return; // Skip the update
+      }
+
+      // Edit the message with the updated content and refresh button
+      const replyMarkup = {
+        inline_keyboard: [
+          [
+            {
+              text: '🔄 Refresh Data',
+              callback_data: `refresh_${tokenAddress}`
+            }
+          ]
+        ]
+      };
+
+      // Edit the existing message with updated holder data
+      bot.editMessageText(formattedMessage, {
+        chat_id: chatId,
+        message_id: query.message.message_id, // Use the original message ID
+        parse_mode: 'Markdown',
+        reply_markup: replyMarkup
+      });
+
+      console.log(`📤 Refreshed data for token: ${tokenAddress}`);
     } catch (error) {
       console.error("Error handling refresh:", error);
       bot.sendMessage(chatId, "❌ An error occurred while refreshing data. Please try again later.");
@@ -287,3 +309,7 @@ bot.on('callback_query', async (query) => {
 });
 
 
+
+
+// Start the bot
+console.log("🚀 Telegram Bot is running...");
