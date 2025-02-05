@@ -275,7 +275,9 @@ bot.on('callback_query', async (query) => {
         chat_id: chatId,
         message_id: query.message.message_id, // Use the original message ID
         parse_mode: 'Markdown',
-        reply_markup: replyMarkup
+        reply_markup: replyMarkup,
+        disable_web_page_preview: true // Prevents URL preview
+
       });
 
       console.log(`📤 Refreshed data for token: ${tokenAddress}`);
