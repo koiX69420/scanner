@@ -14,7 +14,7 @@ async function fetchTopHolders(tokenAddress) {
   }
 
   try {
-    const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=1&page_size=10`;
+    const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=1&page_size=20`;
     console.log(`📡 API Request URL: ${url}`);
 
     const requestOptions = {
