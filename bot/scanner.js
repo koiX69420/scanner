@@ -1,6 +1,5 @@
 require("dotenv").config();
 const bot = require("../tg/tg");
-const Table = require("cli-table3");
 
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -166,12 +165,12 @@ function formatHolderData(holdersData, tokenCa) {
   let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
 
   // Add a header line for each column
-  message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | 🛒 Buys | 🏷️ Sells | 💰 Total Bought (%) | 🔄 Total Sold (%)\n`;
+  message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | 🟢 Buys | 🔴 Sells | ⬆️ Total Bought (%) | ⬇️ Total Sold (%)\n`;
   message += `--------------------------------------------------------------------------\n`;
 
   // Loop through each holder and format the row
   holdersData.forEach((holder) => {
-    message += `${holder.Rank} | [${holder.Address.slice(0, 3)}](https://solscan.io/account/${holder.Address}) | 📊 ${holder["Current Holding (%)"]}% | 🛒 ${holder["Total Buys"]} | 🏷️ ${holder["Total Sells"]} | 💰 ${holder["Total Bought (%)"]}% | 🔄 ${holder["Total Sold (%)"]}%\n`;
+    message += `${holder.Rank} | [${holder.Address.slice(0, 3)}](https://solscan.io/account/${holder.Address}) | 📊 ${holder["Current Holding (%)"]}% | 🟢 ${holder["Total Buys"]} | 🔴 ${holder["Total Sells"]} | ⬆️ ${holder["Total Bought (%)"]}% | ⬇️ ${holder["Total Sold (%)"]}%\n`;
   });
 
   return message;
