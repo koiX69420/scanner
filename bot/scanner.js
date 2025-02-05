@@ -164,17 +164,23 @@ function formatHolderData(holdersData, tokenCa) {
   // Start the message with a header
   let message = `🔹 *Top 20 Token Holders for* [${tokenCa}](https://solscan.io/token/${tokenCa})\n\n`;
 
+  // Use triple backticks to format the table as monospace
+  message += "```\n"; // Start monospace block
+
   // Add a header line for each column
   message += `🏅 Rank  | 🏠 Address | 📊 Holding (%) | 🟢 Buys | 🔴 Sells | ⬆️ Total Bought (%) | ⬇️ Total Sold (%)\n`;
-  message += `--------------------------------------------------------------------------\n`;
+  message += `--------------------------------------------------------------------------------------\n`;
 
   // Loop through each holder and format the row
   holdersData.forEach((holder) => {
-    message += `${holder.Rank} | [${holder.Address.slice(0, 3)}](https://solscan.io/account/${holder.Address}) | 📊 ${holder["Current Holding (%)"]}% | 🟢 ${holder["Total Buys"]} | 🔴 ${holder["Total Sells"]} | ⬆️ ${holder["Total Bought (%)"]}% | ⬇️ ${holder["Total Sold (%)"]}%\n`;
+    message += `${holder.Rank.toString().padEnd(2)} | ${holder.Address.slice(0, 3).padEnd(1)} | ${holder["Current Holding (%)"].toString().padEnd(4)} | 🟢 ${holder["Total Buys"].toString().padEnd(1)} | 🔴 ${holder["Total Sells"].toString().padEnd(1)} | ⬆️ ${holder["Total Bought (%)"].toString().padEnd(4)} | ⬇️ ${holder["Total Sold (%)"].toString().padEnd(4)}\n`;
   });
+
+  message += "```"; // End monospace block
 
   return message;
 }
+
 
 // Function to send the initial message with the refresh button
 async function sendMessageWithButton(chatId, tokenAddress) {
