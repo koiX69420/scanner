@@ -18,15 +18,15 @@ async function fetchTopHolders(tokenAddress) {
       return [];
     }
     return data.data.items
-    .filter(holder => 
-      holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1" 
-    )    .map(holder => ({
-      address: holder.address,
-      amount: holder.amount,
-      decimals: holder.decimals,
-      owner: holder.owner,
-      rank: holder.rank,
-    }));
+      .filter(holder =>
+        holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
+      ).map(holder => ({
+        address: holder.address,
+        amount: holder.amount,
+        decimals: holder.decimals,
+        owner: holder.owner,
+        rank: holder.rank,
+      }));
   } catch (error) {
     console.error(`❌ Error fetching holders for ${tokenAddress}:`, error.message);
     return [];
@@ -186,13 +186,47 @@ function formatMarketCap(value) {
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
   return value.toFixed(2); // Less than 1,000
 }
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory,clusterPercentages) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages) {
   if (!holdersData.length) return "❌ No data available for this token.";
+  let alertEmojiCount = 0;  // Counter for alert emojis
+  let top20Mfers = "\n"
+  top20Mfers += "🔎 *Top 20 Mfers*\n";
+  holdersData.forEach((holder, index) => {
+    let alertEmoji = "";
+    let clusterInfo = "";
+
+    // Check for the conditions
+    if (holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0) {
+      alertEmoji = "⚠️"; // Alert if the wallet has 0 buys but has received supply
+      alertEmojiCount++;  // Increment alert emoji count
+
+    } else if (parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"])) {
+      alertEmoji = "⚠️"; // Alert if the wallet has sold more than bought
+      alertEmojiCount++;  // Increment alert emoji count
+    } else if (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0) {
+      alertEmoji = "⚠️"; // Add an additional alert emoji for this case
+      alertEmojiCount++;  // Increment alert emoji count
+    }
+
+    // Check if part of a cluster
+    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
+    if (cluster) {
+      clusterInfo = ` (Cluster #${clusterPercentages.indexOf(cluster) + 1})`;
+    }
+
+    // Add the formatted message with alert and cluster info
+    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴 ${alertEmoji}\n`;
+  });
+
+  top20Mfers += `_Current Holding (%) Address\nt\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
+
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`
   message += `\`${tokenAddress}\`\n\n`
   const firstMintDate = formatTimestamp(metadata.first_mint_time);
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 6)}](https://solscan.io/token/${tokenAddress})\n`
   message += `📅 On ${firstMintDate}\n\n`
+  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
+
   // 🏷️ List previously created tokens with market cap flag
   // 🏷️ List previously created tokens with market cap flag
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
@@ -253,14 +287,9 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory,clus
     });
 
   });
-  message += "\n";
-  message += "🔎 *Top 20 Mfers*\n"
-  holdersData.forEach(holder => {
-    message += `• *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})\n\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴\n`;
-  });
-  message += `_Current Holding (%) Address\n\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
 
-  return message;
+
+  return message + top20Mfers;
 }
 
 async function calculateClusterPercentages(holderData, fundingMap) {
@@ -317,8 +346,8 @@ async function generateTokenDataMessage(tokenAddress) {
   const tokenHistory = await fetchTokenCreationHistory(creator);
   const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
   const fundingMap = await getFundingMap(holderData);
-  const clusterPercentages = await calculateClusterPercentages(holderData,fundingMap);
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory,clusterPercentages);
+  const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
+  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages);
   console.log("Sent message")
   return {
     text: formattedMessage,
