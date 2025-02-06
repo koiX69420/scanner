@@ -316,8 +316,19 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `\`${tokenAddress}\`\n\n`;
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${firstMintDate}\n`;
+  message+=`🗣️ `
+    // Add Socials
+    if (metadata.metadata.telegram) {
+      message += `[Telegram](${metadata.metadata.telegram}) `;
+    }
+    if (metadata.metadata.website) {
+      message += `[Website](${metadata.metadata.website}) `;
+    }
+    if (metadata.metadata.twitter) {
+      message += `[Twitter](${metadata.metadata.twitter})`;
+    }
+    message += "\n"; // Add spacing before the next section
 
-console.log(dexPay)
   if (dexPay.length > 0) {
     message += `🦅 *Dexscreener Updates:*\n`;
   
@@ -434,6 +445,7 @@ function generateTooltip() {
 
 async function generateTokenMessage(tokenAddress, isSummary = true) {
   const metadata = await fetchTokenMetadata(tokenAddress);
+  console.log(metadata)
   const creator = metadata.creator;
   const tokenHistory = await fetchTokenCreationHistory(creator);
   const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
