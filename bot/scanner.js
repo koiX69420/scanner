@@ -237,7 +237,9 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
   let alertEmojiCount = 0; // Counter for alert emojis
 
   holdersData.forEach(holder => {
+    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
+      cluster ||
       holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
       parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
       (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)
@@ -269,7 +271,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercen
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   message += `\`${tokenAddress}\`\n\n`;
-  message += `🛠️ Token created by: [${metadata.creator.slice(0, 6)}](https://solscan.io/token/${tokenAddress})\n`;
+  message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${firstMintDate}\n\n`;
   message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
 
@@ -298,15 +300,17 @@ function generateTop20Holders(holdersData, clusterPercentages) {
     let alertEmoji = "";
     let clusterInfo = "";
 
-    if (holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
+    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
+    if (
+      holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
       parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
       (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)) {
       alertEmoji = "⚠️";
     }
 
-    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (cluster) {
       clusterInfo = ` (Bundle #${clusterPercentages.indexOf(cluster) + 1})`;
+      alertEmoji="⚠️";
     }
 
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n`;
@@ -326,7 +330,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 
     const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
     message += `#${index + 1} Bundle Holdings: ${totalClusterHoldings}%\n`;
-    message += `    🕵️‍♂️ Funding Wallet: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})`;
+    message += `    🕵️‍♂️ Funding Wallet: [${cluster.sender.slice(0, 4)}...${cluster.sender.slice(-4)}](https://solscan.io/account/${cluster.sender})`;
     if (senderHolding !== "N/A") {
       message += ` - *${senderHolding}%*`;
     }
@@ -359,6 +363,7 @@ function generateTooltip() {
   tooltip += "  - It received tokens but has 0 buys.\n";
   tooltip += "  - It has sold more tokens than it bought.\n";
   tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells, suggesting hidden funds._\n\n";
+  tooltip += "  - Its Part of a Bundle._\n\n";
   return tooltip;
 }
 
