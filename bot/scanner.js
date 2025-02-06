@@ -362,7 +362,7 @@ function generateTooltip() {
   tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
   tooltip += "  - It received tokens but has 0 buys.\n";
   tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells, suggesting hidden funds.\n\n";
+  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells\n";
   tooltip += "  - Its Part of a Bundle._\n\n";
   return tooltip;
 }
