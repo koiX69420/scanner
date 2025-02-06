@@ -3,7 +3,8 @@ const bot = require("../tg/tg");
 
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-
+const TOP_HOLDERS=20
+const PAGE_SIZE=20
 async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
   console.log(`🔄 Fetching top ${maxHolders} holders for token: ${tokenAddress}`);
   if (!tokenAddress) return [];
@@ -15,9 +16,10 @@ async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
   try {
     while (totalFetched < maxHolders) {
       const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=${currentPage}&page_size=${pageSize}`;
+
       const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
       const data = await response.json();
-
+      
       if (!data.success || !data.data || !data.data.items || data.data.items.length === 0) {
         console.error("⚠️ Unexpected API response format or no more holders:", data);
         break;
@@ -36,17 +38,17 @@ async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
       allHolders = [...allHolders, ...filteredHolders];
       totalFetched = allHolders.length;
 
-      if (filteredHolders.length < pageSize) break; // Exit if fewer results returned
-
+      if (data.data.items.length < pageSize) break; // Stop if API returned fewer results than pageSize
       currentPage++;
     }
 
-    return allHolders.slice(0, maxHolders); // Ensure max limit
+    return allHolders.slice(0, maxHolders);
   } catch (error) {
     console.error(`❌ Error fetching holders for ${tokenAddress}:`, error.message);
     return [];
   }
 }
+
 async function fetchTokenMetadata(tokenAddress) {
   try {
     const url = `https://pro-api.solscan.io/v2.0/token/meta?address=${encodeURIComponent(tokenAddress)}`;
@@ -187,7 +189,7 @@ async function fetchDexPay(tokenAddress) {
 
 async function getTokenHolderData(tokenAddress, supply) {
   console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
-  const holders = await fetchTopHolders(tokenAddress);
+  const holders = await fetchTopHolders(tokenAddress,TOP_HOLDERS,PAGE_SIZE);
   if (!holders.length) return [];
 
   return await Promise.all(
@@ -321,31 +323,40 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `📅 On ${firstMintDate}\n`;
   message+=`🗣️ `
     // Add Socials
-    if (metadata.metadata.telegram) {
-      message += `[Telegram](${metadata.metadata.telegram}) `;
-    }
     if (metadata.metadata.website) {
       message += `[Website](${metadata.metadata.website}) `;
     }
     if (metadata.metadata.twitter) {
-      message += `[Twitter](${metadata.metadata.twitter})`;
+      message += `[Twitter](${metadata.metadata.twitter}) `;
     }
+    if (metadata.metadata.telegram) {
+      message += `[Telegram](${metadata.metadata.telegram})`;
+    }
+    message += `[Dexscreener](https://dexscreener.com/solana/${tokenAddress}) `;
+    
     message += "\n"; // Add spacing before the next section
 
+    const statusEmojis = {
+      approved: "✅",
+      processing: "⏳",
+      unreceived: "❌"
+    };
+
   if (dexPay.length > 0) {
-    message += `🦅 *Dexscreener Updates:*\n`;
+    message += `🦅 *Dexscreener Updates*\n`;
   
     dexPay.forEach(order => {
       const paymentTime = formatTimestamp(order.paymentTimestamp)
-      
-      message += `  • ${order.type}: _${order.status} on ${paymentTime}_\n`;
+          const emoji = statusEmojis[order.status] || "❓";
+
+      message += `  • ${order.type}: ${emoji} on ${paymentTime}\n`;
     });
   
     message += "\n"; // Add spacing after listing orders
   } else {
     message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   }
-    message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
+    message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${TOP_HOLDERS} Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
@@ -398,7 +409,12 @@ function generateTop20Holders(holdersData, clusterPercentages) {
 
 // Generates the Cluster Analysis section
 function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
-  let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles found*\n`;
+  const totalBundleHoldings = clusterPercentages.reduce(
+    (sum, cluster) => sum + parseFloat(cluster.totalHoldings || 0),
+    0
+  ).toFixed(2);
+
+  let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply*\n`;
 
   clusterPercentages.forEach((cluster, index) => {
     const senderData = holdersData.find(item => item.Address === cluster.sender);
@@ -448,7 +464,7 @@ function generateTooltip() {
 
 async function generateTokenMessage(tokenAddress, isSummary = true) {
   const metadata = await fetchTokenMetadata(tokenAddress);
-  console.log(metadata)
+
   const creator = metadata.creator;
   const tokenHistory = await fetchTokenCreationHistory(creator);
   const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
