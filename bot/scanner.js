@@ -329,7 +329,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
     const senderHolding = senderData ? senderData.holding : "N/A";
 
     const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
-    message += `#${index + 1} Bundle Holdings: ${totalClusterHoldings}%\n`;
+    message += `*#${index + 1}* Bundle Holdings: ${totalClusterHoldings}%\n`;
     message += `    🕵️‍♂️ Funding Wallet: [${cluster.sender.slice(0, 4)}...${cluster.sender.slice(-4)}](https://solscan.io/account/${cluster.sender})`;
     if (senderHolding !== "N/A") {
       message += ` - *${senderHolding}%*`;
