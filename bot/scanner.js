@@ -475,16 +475,28 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay,isSummary)
 
   console.log("Sent message");
+  if(isSummary){
+    return {
+      text: formattedMessage,
+      replyMarkup: {
+        inline_keyboard: [
+          [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
+          [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
+        ],
+      },
+    };
+  }else{
+    return {
+      text: formattedMessage,
+      replyMarkup: {
+        inline_keyboard: [
+          [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
+          [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
+        ],
+      },
+    };
+  }
 
-  return {
-    text: formattedMessage,
-    replyMarkup: {
-      inline_keyboard: [
-        [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
-        [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
-      ],
-    },
-  };
 }
 
 async function sendMessageWithButton(chatId, tokenAddress) {
