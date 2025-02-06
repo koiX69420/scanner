@@ -19,8 +19,7 @@ async function fetchTopHolders(tokenAddress) {
     }
     return data.data.items
     .filter(holder => 
-      holder.owner !== "6Sp7t6vF3UoDmwk1MEPEpNcrAJgergFcMXBAJha5CUxa" &&
-      holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
+      holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1" 
     )    .map(holder => ({
       address: holder.address,
       amount: holder.amount,
@@ -75,7 +74,7 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
 async function fetchSolTransfers(walletAddress) {
 
   try {
-    const url = `https://pro-api.solscan.io/v2.0/account/transfer?address=${walletAddress}&activity_type[]=ACTIVITY_SPL_TRANSFER&value[]=5&token=So11111111111111111111111111111111111111111&page=1&page_size=10&sort_by=block_time&sort_order=desc`;
+    const url = `https://pro-api.solscan.io/v2.0/account/transfer?address=${walletAddress}&activity_type[]=ACTIVITY_SPL_TRANSFER&value[]=5&token=So11111111111111111111111111111111111111111&page=1&page_size=50&sort_by=block_time&sort_order=desc`;
     const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
     const data = await response.json();
 
@@ -253,10 +252,9 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory,clus
       message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*\n`;
     });
 
-    message += "\n";
   });
-
-    message += "🔎 *Top 20 Mfers*\n"
+  message += "\n";
+  message += "🔎 *Top 20 Mfers*\n"
   holdersData.forEach(holder => {
     message += `• *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})\n\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴\n`;
   });
