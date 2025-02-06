@@ -326,15 +326,15 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `🗣️ `
   // Add Socials
   if (metadata.metadata.website) {
-    message += `[Website](${metadata.metadata.website}) | `;
+    message += `[Web](${metadata.metadata.website}) | `;
   }
   if (metadata.metadata.twitter) {
-    message += `[X](${metadata.metadata.twitter}) | `;
+    message += `[𝕏](${metadata.metadata.twitter}) | `;
   }
   if (metadata.metadata.telegram) {
-    message += `[Telegram](${metadata.metadata.telegram}) | `;
+    message += `[TG](${metadata.metadata.telegram}) | `;
   }
-  message += `[Dexscreener](https://dexscreener.com/solana/${tokenAddress}) `;
+  message += `[Dex](https://dexscreener.com/solana/${tokenAddress}) `;
 
   message += "\n"; // Add spacing before the next section
 
