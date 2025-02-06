@@ -167,8 +167,8 @@ async function fetchDexPay(tokenAddress) {
       headers: {},
     });
     const data = await response.json();
-    if(data[0]){
-      return data[0]
+    if(data.length>0){
+      return data
     }else{
       return {type:"tokenProfile",
         status:"unreceived",
@@ -253,15 +253,19 @@ async function calculateClusterPercentages(holderData, fundingMap) {
 }
 
 function formatTimestamp(timestamp) {
-  const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
+  if (!timestamp || isNaN(timestamp)) return "❌ Invalid Time"; // Handle bad data
+
+  console.log("Raw Timestamp:", timestamp); // Debugging
+  
+  // Ensure timestamp is in seconds, not milliseconds
+  const isMilliseconds = timestamp > 9999999999; // If it's greater than year 2286, it's in ms
+  const correctedTimestamp = isMilliseconds ? timestamp : timestamp * 1000;
+  
+  const date = new Date(correctedTimestamp);
   return date.toLocaleString("en-US", {
     year: "numeric",
     month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
+    day: "numeric"
   });
 }
 function formatMarketCap(value) {
@@ -287,7 +291,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     }
   });
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount,dexPay);
 
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
@@ -305,22 +309,29 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 // Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay) {
-  console.log(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay)
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount,dexPay) {
   const firstMintDate = formatTimestamp(metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   message += `\`${tokenAddress}\`\n\n`;
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${firstMintDate}\n`;
-  const statusEmojis = {
-    approved: "✅",
-    processing: "⏳",
-    unreceived: "❌"
-  };
 
-  message += `🦅 Dexscreener Updated: ${statusEmojis[dexPay.status] || "❓ Unknown"}\n\n`;
-  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
+console.log(dexPay)
+  if (dexPay.length > 0) {
+    message += `🦅 *Dexscreener Updates:*\n`;
+  
+    dexPay.forEach(order => {
+      const paymentTime = formatTimestamp(order.paymentTimestamp)
+      
+      message += `  • ${order.type}: _${order.status} on ${paymentTime}_\n`;
+    });
+  
+    message += "\n"; // Add spacing after listing orders
+  } else {
+    message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
+  }
+    message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
@@ -357,15 +368,19 @@ function generateTop20Holders(holdersData, clusterPercentages) {
 
     if (cluster) {
       clusterInfo = ` (Bundle #${clusterPercentages.indexOf(cluster) + 1})`;
-      alertEmoji="⚠️";
+      alertEmoji = "⚠️";
     }
 
+    // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
+    const trendEmoji = parseFloat(holder["Total Bought (%)"]) >= parseFloat(holder["Total Sold (%)"]) ? "🟢" : "🔴";
+
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${alertEmoji}${clusterInfo}\n`;
-    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴\n\n`;
+    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
   });
 
   return top20Mfers + "\n";
 }
+
 
 // Generates the Cluster Analysis section
 function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
