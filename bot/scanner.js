@@ -218,7 +218,6 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴 ${alertEmoji}\n`;
   });
 
-  top20Mfers += `_Current Holding (%) Address\nt\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`
   message += `\`${tokenAddress}\`\n\n`
@@ -287,9 +286,15 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     });
 
   });
+  let tooltip = "\n*Tooltip*\n"
+  tooltip += `_Current Holding (%) Address\nt\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
 
-
-  return message + top20Mfers;
+  tooltip += "🔍 _What is a Sus Wallet?\n";
+  tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
+  tooltip += "  - It received tokens but has 0 buys.\n";
+  tooltip += "  - It has sold more tokens than it bought.\n";
+  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells, suggesting hidden funds._\n\n";
+  return message + top20Mfers + tooltip;
 }
 
 async function calculateClusterPercentages(holderData, fundingMap) {
