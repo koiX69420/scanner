@@ -32,7 +32,7 @@ async function fetchTopHolders(tokenAddress) {
     return [];
   }
 }
-
+fetchTopHolders("67SYcaCfcpiXtfPKc6Ywo6UEu4LMbsfExWcUC9dppump")
 async function fetchTokenMetadata(tokenAddress) {
   try {
     const url = `https://pro-api.solscan.io/v2.0/token/meta?address=${encodeURIComponent(tokenAddress)}`;
@@ -74,10 +74,9 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
 async function fetchSolTransfers(walletAddress) {
 
   try {
-    const url = `https://pro-api.solscan.io/v2.0/account/transfer?address=${walletAddress}&activity_type[]=ACTIVITY_SPL_TRANSFER&value[]=5&token=So11111111111111111111111111111111111111111&page=1&page_size=50&sort_by=block_time&sort_order=desc`;
+    const url = `https://pro-api.solscan.io/v2.0/account/transfer?address=${walletAddress}&activity_type[]=ACTIVITY_SPL_TRANSFER&value[]=5&token=So11111111111111111111111111111111111111111&page=1&page_size=40&sort_by=block_time&sort_order=desc`;
     const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
     const data = await response.json();
-
     if (data.success) {
       return data.data;
     }
@@ -114,7 +113,6 @@ async function getFundingMap(topHolders) {
       }
     }
   }
-
   return fundingMap;
 }
 
@@ -168,134 +166,6 @@ async function getTokenHolderData(tokenAddress, supply) {
     })
   );
 }
-function formatTimestamp(timestamp) {
-  const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "short",
-  });
-}
-function formatMarketCap(value) {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`; // Billions
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`; // Millions
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
-  return value.toFixed(2); // Less than 1,000
-}
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages) {
-  if (!holdersData.length) return "❌ No data available for this token.";
-  let alertEmojiCount = 0;  // Counter for alert emojis
-  let top20Mfers = "\n"
-  top20Mfers += "🔎 *Top 20 Mfers*\n";
-  holdersData.forEach((holder, index) => {
-    let alertEmoji = "";
-    let clusterInfo = "";
-
-    // Check for the conditions
-    if (holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0) {
-      alertEmoji = "⚠️"; // Alert if the wallet has 0 buys but has received supply
-      alertEmojiCount++;  // Increment alert emoji count
-
-    } else if (parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"])) {
-      alertEmoji = "⚠️"; // Alert if the wallet has sold more than bought
-      alertEmojiCount++;  // Increment alert emoji count
-    } else if (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0) {
-      alertEmoji = "⚠️"; // Add an additional alert emoji for this case
-      alertEmojiCount++;  // Increment alert emoji count
-    }
-
-    // Check if part of a cluster
-    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
-    if (cluster) {
-      clusterInfo = ` (Cluster #${clusterPercentages.indexOf(cluster) + 1})`;
-    }
-
-    // Add the formatted message with alert and cluster info
-    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴 ${alertEmoji}\n`;
-  });
-
-
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`
-  message += `\`${tokenAddress}\`\n\n`
-  const firstMintDate = formatTimestamp(metadata.first_mint_time);
-  message += `🛠️ Token created by: [${metadata.creator.slice(0, 6)}](https://solscan.io/token/${tokenAddress})\n`
-  message += `📅 On ${firstMintDate}\n\n`
-  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
-
-  // 🏷️ List previously created tokens with market cap flag
-  // 🏷️ List previously created tokens with market cap flag
-  message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
-  if (tokenHistory.length > 1) {
-    // Sort by market_cap (tokens with market_cap come first, sorted in descending order)
-    const sortedTokens = [...tokenHistory].sort((a, b) => {
-      const mcA = a.metadata?.market_cap || 0;
-      const mcB = b.metadata?.market_cap || 0;
-      return mcB - mcA; // Descending order
-    });
-
-    sortedTokens.forEach(token => {
-
-      if (token.metadata.address === tokenAddress) {
-        return;
-      }
-      const flag = token.metadata?.market_cap
-        ? `:_${formatMarketCap(token.metadata.market_cap)}_`
-        : "";
-      message += `[$${token.metadata.symbol}](https://solscan.io/token/${tokenAddress})${flag}\t`;
-    });
-
-    message += "\n";
-  }
-  message += "\n"
-
-  message += `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles found*\n`;
-
-  // Add cluster data
-  clusterPercentages.forEach((cluster, index) => {
-    // Add sender and total holdings with sliced address and clickable
-    const senderData = holdersData.find(item => item.Address === cluster.sender);
-    const senderHolding = senderData ? senderData.holding : "N/A"; // Get sender holding
-    message += `🧑‍💼 Funding Wallet: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})`;
-
-    // Add the funding wallet's holding percentage (if available) right next to the sender
-    if (senderHolding !== "N/A") {
-      message += ` - * - ${senderHolding}%*`;
-    }
-    message += "\n"; // New line after funding wallet
-
-    // Calculate the total cluster holdings including the funding wallet holdings
-    const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
-    message += `💼 Cluster Holdings: ${totalClusterHoldings}%\n`;
-
-    // List the recipients and their holdings, with sliced addresses and clickable
-    message += `Recipients:\n`;
-    cluster.recipients.forEach((recipient) => {
-      const recipientData = holdersData.find(item => item.Address === recipient);
-      const holding = recipientData ? recipientData["Current Holding (%)"] : "N/A"; // Get recipient holding
-
-      // Find ranking of the recipient in the top holders list
-      const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
-      const rankingText = ranking > 0 ? `#*${ranking}*` : ""; // Format ranking as bold number in brackets
-
-      // Adding cleaner spacing between values
-      message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*\n`;
-    });
-
-  });
-  let tooltip = "\n*Tooltip*\n"
-  tooltip += `_Current Holding (%) Address\nt\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
-
-  tooltip += "🔍 _What is a Sus Wallet?\n";
-  tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
-  tooltip += "  - It received tokens but has 0 buys.\n";
-  tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells, suggesting hidden funds._\n\n";
-  return message + top20Mfers + tooltip;
-}
 
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
@@ -313,7 +183,6 @@ async function calculateClusterPercentages(holderData, fundingMap) {
     for (const [sender, recipients] of Object.entries(fundingMap)) {
       // Skip if there are 1 or fewer recipients
       if (recipients.size <= 1) continue;
-      console.log(recipients)
 
       let totalHoldings = 0;
 
@@ -344,26 +213,183 @@ async function calculateClusterPercentages(holderData, fundingMap) {
   }
 }
 
+function formatTimestamp(timestamp) {
+  const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+}
+function formatMarketCap(value) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`; // Billions
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`; // Millions
+  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
+  return value.toFixed(2); // Less than 1,000
+}
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, isSummary = false) {
+  if (!holdersData.length) return "❌ No data available for this token.";
 
-async function generateTokenDataMessage(tokenAddress) {
+  let alertEmojiCount = 0; // Counter for alert emojis
+
+  holdersData.forEach(holder => {
+    if (
+      holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
+      parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
+      (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)
+    ) {
+      alertEmojiCount++;
+    }
+  });
+
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount);
+
+  message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
+  // **Only include Top 20 holders for the detailed report**
+  if (!isSummary) {
+    message += generateTop20Holders(holdersData, clusterPercentages);
+  }
+
+
+  // **Only include Tooltip in the detailed report**
+  if (!isSummary) {
+    message += generateTooltip();
+  }
+
+  return message;
+}
+
+// Generates the common message structure
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount) {
+  const firstMintDate = formatTimestamp(metadata.first_mint_time);
+
+  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  message += `\`${tokenAddress}\`\n\n`;
+  message += `🛠️ Token created by: [${metadata.creator.slice(0, 6)}](https://solscan.io/token/${tokenAddress})\n`;
+  message += `📅 On ${firstMintDate}\n\n`;
+  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
+
+  message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
+  if (tokenHistory.length > 1) {
+    const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
+
+    sortedTokens.forEach(token => {
+      if (token.metadata.address !== tokenAddress) {
+        const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
+        message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
+      }
+    });
+
+    message += "\n";
+  }
+
+  return message + "\n";
+}
+
+// Generates the Top 20 Holders section
+function generateTop20Holders(holdersData, clusterPercentages) {
+  let top20Mfers = "\n🔎 *Top 20 Mfers*\n";
+
+  holdersData.forEach((holder, index) => {
+    let alertEmoji = "";
+    let clusterInfo = "";
+
+    if (holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
+      parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
+      (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)) {
+      alertEmoji = "⚠️";
+    }
+
+    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
+    if (cluster) {
+      clusterInfo = ` (Cluster #${clusterPercentages.indexOf(cluster) + 1})`;
+    }
+
+    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n`;
+    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t 🟢 ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% 🔴 ${alertEmoji}\n`;
+  });
+
+  return top20Mfers + "\n";
+}
+
+// Generates the Cluster Analysis section
+function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
+  let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles found*\n`;
+
+  clusterPercentages.forEach((cluster, index) => {
+    const senderData = holdersData.find(item => item.Address === cluster.sender);
+    const senderHolding = senderData ? senderData.holding : "N/A";
+
+    const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
+    message += `#${index + 1} Bundle Holdings: ${totalClusterHoldings}%\n`;
+    message += `    🕵️‍♂️ Funding Wallet: [${cluster.sender.slice(0, 6)}...](https://solscan.io/account/${cluster.sender})`;
+    if (senderHolding !== "N/A") {
+      message += ` - *${senderHolding}%*`;
+    }
+    message += "\n";
+
+
+    // **Only include recipient breakdown in detailed report**
+    if (!isSummary) {
+      message += `  Recipients:\n`;
+      cluster.recipients.forEach(recipient => {
+        const recipientData = holdersData.find(item => item.Address === recipient);
+        const holding = recipientData ? recipientData["Current Holding (%)"] : "N/A";
+        const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
+        const rankingText = ranking > 0 ? `#*${ranking}*` : "";
+
+        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*\n`;
+      });
+    }
+  });
+
+  return message;
+}
+
+// Generates the Tooltip section (only for the detailed report)
+function generateTooltip() {
+  let tooltip = "\n*Tooltip*\n";
+  tooltip += `_Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
+  tooltip += "🔍 _What is a Sus Wallet?\n";
+  tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
+  tooltip += "  - It received tokens but has 0 buys.\n";
+  tooltip += "  - It has sold more tokens than it bought.\n";
+  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells, suggesting hidden funds._\n\n";
+  return tooltip;
+}
+
+
+
+
+async function generateTokenMessage(tokenAddress, isSummary = true) {
   const metadata = await fetchTokenMetadata(tokenAddress);
   const creator = metadata.creator;
   const tokenHistory = await fetchTokenCreationHistory(creator);
   const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
   const fundingMap = await getFundingMap(holderData);
   const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages);
-  console.log("Sent message")
+
+  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, isSummary)
+
+  console.log("Sent message");
+
   return {
     text: formattedMessage,
     replyMarkup: {
-      inline_keyboard: [[{ text: "🔄 Refresh Data", callback_data: `refresh_${tokenAddress}` }]],
+      inline_keyboard: [
+        [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
+        [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
+      ],
     },
   };
 }
 
 async function sendMessageWithButton(chatId, tokenAddress) {
-  const { text, replyMarkup } = await generateTokenDataMessage(tokenAddress);
+  const { text, replyMarkup } = await generateTokenMessage(tokenAddress);
   console.log("Sent message")
   return bot.sendMessage(chatId, text, {
     parse_mode: "Markdown",
@@ -395,24 +421,32 @@ bot.on("message", async msg => {
 });
 
 bot.on("callback_query", async query => {
-  if (!query.data.startsWith("refresh_")) return;
-
-  const tokenAddress = query.data.split("_")[1];
+  const data = query.data;
   const chatId = query.message.chat.id;
-  bot.answerCallbackQuery(query.id, { text: "Refreshing data...", show_alert: false });
+  const messageId = query.message.message_id;
 
-  try {
-    const { text, replyMarkup } = await generateTokenDataMessage(tokenAddress);
-    bot.editMessageText(text, {
-      chat_id: chatId,
-      message_id: query.message.message_id,
-      parse_mode: "Markdown",
-      reply_markup: replyMarkup,
-      disable_web_page_preview: true,
+  if (data.startsWith("refresh_") || data.startsWith("showDetails_")) {
+    const tokenAddress = data.split("_")[1];
+    const isSummary = !data.startsWith("showDetails_"); // If it's "showDetails_", set isSummary to false
+
+    bot.answerCallbackQuery(query.id, {
+      text: isSummary ? "Refreshing data..." : "Fetching details...",
+      show_alert: false,
     });
-  } catch (error) {
-    console.error("Error handling refresh:", error);
-    bot.sendMessage(chatId, "❌ An error occurred while refreshing data. Please try again later.");
+
+    try {
+      const { text, replyMarkup } = await generateTokenMessage(tokenAddress, isSummary);
+      bot.editMessageText(text, {
+        chat_id: chatId,
+        message_id: messageId,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+        disable_web_page_preview: true,
+      });
+    } catch (error) {
+      console.error("Error handling callback query:", error);
+      bot.sendMessage(chatId, "❌ An error occurred while processing your request. Please try again later.");
+    }
   }
 });
 
