@@ -17,6 +17,7 @@ async function fetchTopHolders(tokenAddress) {
       console.error("⚠️ Unexpected API response format:", data);
       return [];
     }
+    console.log(data.data)
     return data.data.items
       .filter(holder =>
         holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
@@ -32,7 +33,6 @@ async function fetchTopHolders(tokenAddress) {
     return [];
   }
 }
-fetchTopHolders("67SYcaCfcpiXtfPKc6Ywo6UEu4LMbsfExWcUC9dppump")
 async function fetchTokenMetadata(tokenAddress) {
   try {
     const url = `https://pro-api.solscan.io/v2.0/token/meta?address=${encodeURIComponent(tokenAddress)}`;
@@ -362,7 +362,6 @@ function generateTooltip() {
   tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
   tooltip += "  - It received tokens but has 0 buys.\n";
   tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - Its Total Bought ≠ Current Holding* and has 0 sells\n";
   tooltip += "  - Its Part of a Bundle._\n\n";
   return tooltip;
 }
