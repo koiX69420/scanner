@@ -3,8 +3,8 @@ const bot = require("../tg/tg");
 
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const TOP_HOLDERS=20
-const PAGE_SIZE=20
+const TOP_HOLDERS = 20
+const PAGE_SIZE = 20
 async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
   console.log(`🔄 Fetching top ${maxHolders} holders for token: ${tokenAddress}`);
   if (!tokenAddress) return [];
@@ -19,7 +19,7 @@ async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
 
       const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
       const data = await response.json();
-      
+
       if (!data.success || !data.data || !data.data.items || data.data.items.length === 0) {
         console.error("⚠️ Unexpected API response format or no more holders:", data);
         break;
@@ -169,19 +169,21 @@ async function fetchDexPay(tokenAddress) {
       headers: {},
     });
     const data = await response.json();
-    if(data.length>0){
+    if (data.length > 0) {
       return data
-    }else{
-      return {type:"tokenProfile",
-        status:"unreceived",
-        paymentTimestamp:0
+    } else {
+      return {
+        type: "tokenProfile",
+        status: "unreceived",
+        paymentTimestamp: 0
       }
     }
   } catch (error) {
     console.error(`❌ Error fetching dex pa for ${tokenAddress}:`, error.message);
-    return {type:"tokenProfile",
-      status:"unreceived",
-      paymentTimestamp:0
+    return {
+      type: "tokenProfile",
+      status: "unreceived",
+      paymentTimestamp: 0
     }
   }
 
@@ -189,7 +191,7 @@ async function fetchDexPay(tokenAddress) {
 
 async function getTokenHolderData(tokenAddress, supply) {
   console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
-  const holders = await fetchTopHolders(tokenAddress,TOP_HOLDERS,PAGE_SIZE);
+  const holders = await fetchTopHolders(tokenAddress, TOP_HOLDERS, PAGE_SIZE);
   if (!holders.length) return [];
 
   return await Promise.all(
@@ -258,11 +260,11 @@ function formatTimestamp(timestamp) {
   if (!timestamp || isNaN(timestamp)) return "❌ Invalid Time"; // Handle bad data
 
   console.log("Raw Timestamp:", timestamp); // Debugging
-  
+
   // Ensure timestamp is in seconds, not milliseconds
   const isMilliseconds = timestamp > 9999999999; // If it's greater than year 2286, it's in ms
   const correctedTimestamp = isMilliseconds ? timestamp : timestamp * 1000;
-  
+
   const date = new Date(correctedTimestamp);
   return date.toLocaleString("en-US", {
     year: "numeric",
@@ -296,7 +298,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     }
   });
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount,dexPay);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay);
 
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
@@ -314,49 +316,49 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 // Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount,dexPay) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay) {
   const firstMintDate = formatTimestamp(metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   message += `\`${tokenAddress}\`\n\n`;
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${firstMintDate}\n`;
-  message+=`🗣️ `
-    // Add Socials
-    if (metadata.metadata.website) {
-      message += `[Website](${metadata.metadata.website}) `;
-    }
-    if (metadata.metadata.twitter) {
-      message += `[Twitter](${metadata.metadata.twitter}) `;
-    }
-    if (metadata.metadata.telegram) {
-      message += `[Telegram](${metadata.metadata.telegram})`;
-    }
-    message += `[Dexscreener](https://dexscreener.com/solana/${tokenAddress}) `;
-    
-    message += "\n"; // Add spacing before the next section
+  message += `🗣️ `
+  // Add Socials
+  if (metadata.metadata.website) {
+    message += `[Website](${metadata.metadata.website}) `;
+  }
+  if (metadata.metadata.twitter) {
+    message += `[Twitter](${metadata.metadata.twitter}) `;
+  }
+  if (metadata.metadata.telegram) {
+    message += `[Telegram](${metadata.metadata.telegram})`;
+  }
+  message += `[Dexscreener](https://dexscreener.com/solana/${tokenAddress}) `;
 
-    const statusEmojis = {
-      approved: "✅",
-      processing: "⏳",
-      unreceived: "❌"
-    };
+  message += "\n"; // Add spacing before the next section
+
+  const statusEmojis = {
+    approved: "✅",
+    processing: "⏳",
+    unreceived: "❌"
+  };
 
   if (dexPay.length > 0) {
     message += `🦅 *Dexscreener Updates*\n`;
-  
+
     dexPay.forEach(order => {
       const paymentTime = formatTimestamp(order.paymentTimestamp)
-          const emoji = statusEmojis[order.status] || "❓";
+      const emoji = statusEmojis[order.status] || "❓";
 
       message += `  • ${order.type}: ${emoji} on ${paymentTime}\n`;
     });
-  
+
     message += "\n"; // Add spacing after listing orders
   } else {
     message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   }
-    message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${TOP_HOLDERS} Holders* ⚠️\n\n`;
+  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${TOP_HOLDERS} Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
@@ -450,7 +452,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 // Generates the Tooltip section (only for the detailed report)
 function generateTooltip() {
   let tooltip = "\n*Tooltip*\n";
-  tooltip += `_Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t 🟢 Total Bought (%)/\u200BTotal Sold (%) 🔴_\n\n`;
+  tooltip += `_Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%)_ (🟢: hasn't sold) (🔴:has sold) \n\n`;
   tooltip += "🔍 _What is a Sus Wallet?\n";
   tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
   tooltip += "  - It received tokens but has 0 buys.\n";
@@ -472,30 +474,23 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
   const dexPay = await fetchDexPay(tokenAddress);
 
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay,isSummary)
+  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, isSummary)
 
   console.log("Sent message");
-  if(isSummary){
-    return {
-      text: formattedMessage,
-      replyMarkup: {
-        inline_keyboard: [
-          [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
-          [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
-        ],
-      },
-    };
-  }else{
-    return {
-      text: formattedMessage,
-      replyMarkup: {
-        inline_keyboard: [
-          [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
-          [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
-        ],
-      },
-    };
-  }
+  const buttons = isSummary
+    ? [
+      [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
+      [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
+    ]
+    : [
+      [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
+      [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
+    ];
+
+  return {
+    text: formattedMessage,
+    replyMarkup: { inline_keyboard: buttons },
+  };
 
 }
 
