@@ -372,9 +372,10 @@ function generateTop20Holders(holdersData, clusterPercentages) {
     }
 
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
+    const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
 
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${alertEmoji}${clusterInfo}\n`;
-    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t Bought ${holder["Total Bought (%)"]}%/\u200BSold ${holder["Total Sold (%)"]}%\n\n`;
+    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
   });
 
   return top20Mfers + "\n";
@@ -399,7 +400,8 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 
 
     // **Only include recipient breakdown in detailed report**
-    if (!isSummary) {
+    // if (!isSummary) {
+    if (true) {
       message += `  Recipients:\n`;
       cluster.recipients.forEach(recipient => {
         const recipientData = holdersData.find(item => item.Address === recipient);
