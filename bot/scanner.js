@@ -4,30 +4,44 @@ const bot = require("../tg/tg");
 const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-async function fetchTopHolders(tokenAddress) {
-  console.log(`🔄 Fetching top holders for token: ${tokenAddress}`);
+async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
+  console.log(`🔄 Fetching top ${maxHolders} holders for token: ${tokenAddress}`);
   if (!tokenAddress) return [];
 
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=1&page_size=20`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const data = await response.json();
+  let allHolders = [];
+  let currentPage = 1;
+  let totalFetched = 0;
 
-    if (!data.success || !data.data || !data.data.items) {
-      console.error("⚠️ Unexpected API response format:", data);
-      return [];
+  try {
+    while (totalFetched < maxHolders) {
+      const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=${currentPage}&page_size=${pageSize}`;
+      const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
+      const data = await response.json();
+
+      if (!data.success || !data.data || !data.data.items || data.data.items.length === 0) {
+        console.error("⚠️ Unexpected API response format or no more holders:", data);
+        break;
+      }
+
+      const filteredHolders = data.data.items
+        .filter(holder => holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1")
+        .map(holder => ({
+          address: holder.address,
+          amount: holder.amount,
+          decimals: holder.decimals,
+          owner: holder.owner,
+          rank: holder.rank,
+        }));
+
+      allHolders = [...allHolders, ...filteredHolders];
+      totalFetched = allHolders.length;
+
+      if (filteredHolders.length < pageSize) break; // Exit if fewer results returned
+
+      currentPage++;
     }
-    console.log(data.data)
-    return data.data.items
-      .filter(holder =>
-        holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1"
-      ).map(holder => ({
-        address: holder.address,
-        amount: holder.amount,
-        decimals: holder.decimals,
-        owner: holder.owner,
-        rank: holder.rank,
-      }));
+
+    return allHolders.slice(0, maxHolders); // Ensure max limit
   } catch (error) {
     console.error(`❌ Error fetching holders for ${tokenAddress}:`, error.message);
     return [];
@@ -146,6 +160,31 @@ async function fetchTokenCreationHistory(walletAddress) {
   }
 }
 
+async function fetchDexPay(tokenAddress) {
+  try {
+    const response = await fetch(`https://api.dexscreener.com/orders/v1/solana/${tokenAddress}`, {
+      method: 'GET',
+      headers: {},
+    });
+    const data = await response.json();
+    if(data[0]){
+      return data[0]
+    }else{
+      return {type:"tokenProfile",
+        status:"unreceived",
+        paymentTimestamp:0
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Error fetching dex pa for ${tokenAddress}:`, error.message);
+    return {type:"tokenProfile",
+      status:"unreceived",
+      paymentTimestamp:0
+    }
+  }
+
+}
+
 async function getTokenHolderData(tokenAddress, supply) {
   console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
   const holders = await fetchTopHolders(tokenAddress);
@@ -231,7 +270,7 @@ function formatMarketCap(value) {
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
   return value.toFixed(2); // Less than 1,000
 }
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
 
   let alertEmojiCount = 0; // Counter for alert emojis
@@ -248,7 +287,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     }
   });
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay);
 
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
@@ -266,13 +305,21 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 // Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay) {
+  console.log(tokenAddress, metadata, tokenHistory, clusterPercentages, alertEmojiCount,dexPay)
   const firstMintDate = formatTimestamp(metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   message += `\`${tokenAddress}\`\n\n`;
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
-  message += `📅 On ${firstMintDate}\n\n`;
+  message += `📅 On ${firstMintDate}\n`;
+  const statusEmojis = {
+    approved: "✅",
+    processing: "⏳",
+    unreceived: "❌"
+  };
+
+  message += `🦅 Dexscreener Updated: ${statusEmojis[dexPay.status] || "❓ Unknown"}\n\n`;
   message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
@@ -376,8 +423,9 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
   const fundingMap = await getFundingMap(holderData);
   const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
+  const dexPay = await fetchDexPay(tokenAddress);
 
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, isSummary)
+  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay,isSummary)
 
   console.log("Sent message");
 
