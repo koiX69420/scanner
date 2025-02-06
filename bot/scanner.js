@@ -306,7 +306,7 @@ function generateTop20Holders(holdersData, clusterPercentages) {
 
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (cluster) {
-      clusterInfo = ` (Cluster #${clusterPercentages.indexOf(cluster) + 1})`;
+      clusterInfo = ` (Bundle #${clusterPercentages.indexOf(cluster) + 1})`;
     }
 
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${clusterInfo}\n`;
