@@ -326,13 +326,13 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `🗣️ `
   // Add Socials
   if (metadata.metadata.website) {
-    message += `[Website](${metadata.metadata.website}) `;
+    message += `[Website](${metadata.metadata.website}) | `;
   }
   if (metadata.metadata.twitter) {
-    message += `[Twitter](${metadata.metadata.twitter}) `;
+    message += `[X](${metadata.metadata.twitter}) | `;
   }
   if (metadata.metadata.telegram) {
-    message += `[Telegram](${metadata.metadata.telegram})`;
+    message += `[Telegram](${metadata.metadata.telegram}) | `;
   }
   message += `[Dexscreener](https://dexscreener.com/solana/${tokenAddress}) `;
 
