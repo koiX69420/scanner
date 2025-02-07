@@ -613,34 +613,45 @@ function generateTooltip() {
 
 
 async function generateTokenMessage(tokenAddress, isSummary = true) {
+  // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
+  const tokenHistory = await fetchTokenCreationHistory(metadata.creator);
 
-  const creator = metadata.creator;
-  const tokenHistory = await fetchTokenCreationHistory(creator);
-  const moreHolderData = await getTokenHolderData(tokenAddress,metadata.supply,200,40);
-  const fundingMap = await getFundingMap(moreHolderData);
-  const clusterPercentages = await calculateClusterPercentages(moreHolderData.slice(0, 20), fundingMap);
-  const dexPay = await fetchDexPay(tokenAddress);
-  const pools = await fetchTokenMarkets(tokenAddress);
+  // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
+  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, 200, 40);
+  const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
+  const dexPayPromise = fetchDexPay(tokenAddress);
+  const poolsPromise = fetchTokenMarkets(tokenAddress);
+
+  // Wait for all the independent data to finish fetching
+  const [moreHolderData, fundingMap, dexPay, pools] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise]);
+
+  // Calculate cluster percentages after fetching the required data
+  const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
+
+  // Fetch Dex Socials (which also can run in parallel)
   const dexSocials = await fetchDexSocials(pools);
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary)
+
+  // Format the message based on all the fetched data
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary);
 
   console.log("Sent message");
+
+  // Create buttons based on the summary flag
   const buttons = isSummary
     ? [
-      [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
-      [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
-    ]
+        [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
+        [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
+      ]
     : [
-      [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
-      [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
-    ];
+        [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
+        [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
+      ];
 
   return {
     text: formattedMessage,
     replyMarkup: { inline_keyboard: buttons },
   };
-
 }
 
 async function sendMessageWithButton(chatId, tokenAddress) {
