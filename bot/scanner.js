@@ -125,6 +125,13 @@ async function fetchDexSocials(pools) {
     const dexSocials = await Promise.all(
       pools.map(async (pool) => {
         const pairId = pool.pool_id;
+        const { token_1, token_2 } = pool;
+
+        // Check if either the base or quote token is Solana (SOL)
+        if (token_1 !== 'So11111111111111111111111111111111111111112' && token_2 !== 'So11111111111111111111111111111111111111112') {
+          return { pool_id: pairId, socials: [], websites: [] };
+        }
+        console.log(pool)
         const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
 
         try {
@@ -136,13 +143,6 @@ async function fetchDexSocials(pools) {
           // Get the first valid pair from the response
           const pairData = result.pair;
           if (!pairData) return { pool_id: pairId, socials: [], websites: [] };
-
-          const { baseToken, quoteToken } = pairData;
-
-          // Check if either the base or quote token is Solana (SOL)
-          if (baseToken.symbol.toLowerCase() !== 'sol' && quoteToken.symbol.toLowerCase() !== 'sol') {
-            return { pool_id: pairId, socials: [], websites: [] };
-          }
 
           const dexId = pairData.dexId; // Extract dexId
 
