@@ -102,7 +102,76 @@ async function fetchSolTransfers(walletAddress) {
     return [];
   }
 }
+async function fetchTokenMarkets(tokenAddress) {
+  try {
+    const url = `https://pro-api.solscan.io/v2.0/token/markets?token[]=${tokenAddress}&page=1&page_size=10`;
+    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
+    const data = await response.json();
+    if (data.success) {
+      return data.data;
+    }
+    return []
+  } catch (error) {
+    console.error(`❌ Error fetching fetchTokenMarkets for ${tokenAddress}:`, error.message);
+    return [];
+  }
+}
 
+async function fetchDexSocials(pools) {
+  try {
+    const chainId = "solana"; // Set the chain ID if it's constant
+
+    // Fetch data for all pool IDs in parallel
+    const dexSocials = await Promise.all(
+      pools.map(async (pool) => {
+        const pairId = pool.pool_id;
+        const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
+
+        try {
+          const response = await fetch(url, { method: "GET" });
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          
+          const result = await response.json();
+
+          // Get the first valid pair from the response
+          const pairData = result.pair;
+          if (!pairData) return { pool_id: pairId, socials: [], websites: [] };
+
+          const { baseToken, quoteToken } = pairData;
+
+          // Check if either the base or quote token is Solana (SOL)
+          if (baseToken.symbol.toLowerCase() !== 'sol' && quoteToken.symbol.toLowerCase() !== 'sol') {
+            return { pool_id: pairId, socials: [], websites: [] };
+          }
+
+          const dexId = pairData.dexId; // Extract dexId
+
+          const socials = (pairData.info?.socials || [])
+            .map(social => ({
+              type: social.type.toLowerCase(),
+              url: social.url
+            }));
+
+          const websites = (pairData.info?.websites || [])
+            .map(website => ({
+              label: website.label.toLowerCase(),
+              url: website.url
+            }));
+
+          return { pool_id: pairId, socials, websites, dexId };
+        } catch (error) {
+          console.error(`⚠️ Error fetching data for pair ${pairId}:`, error.message);
+          return { pool_id: pairId, socials: [], websites: [] };
+        }
+      })
+    );
+
+    return dexSocials;
+  } catch (error) {
+    console.error("❌ Error fetching Dexscreener socials:", error.message);
+    return [];
+  }
+}
 async function getFundingMap(topHolders) {
   const fundingMap = {}; // Map to group funding wallets for clustering
 
@@ -292,7 +361,7 @@ function formatMarketCap(value) {
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
   return value.toFixed(2); // Less than 1,000
 }
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
 
   let alertEmojiCount = 0; // Counter for alert emojis
@@ -309,7 +378,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     }
   });
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials);
 
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
@@ -327,7 +396,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 // Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials) {
   const firstMintDate = formatTimestamp(metadata.created_time || metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
@@ -335,19 +404,85 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${firstMintDate}\n`;
   message += `🗣️ `
-  // Add Socials
-  if (metadata.metadata.website) {
-    message += `[Web](${metadata.metadata.website}) | `;
-  }
-  if (metadata.metadata.twitter) {
-    message += `[𝕏](${metadata.metadata.twitter}) | `;
-  }
-  if (metadata.metadata.telegram) {
-    message += `[TG](${metadata.metadata.telegram}) | `;
-  }
-  message += `[Dex](https://dexscreener.com/solana/${tokenAddress}) `;
+  // Extract socials from metadata
+// Extract socials from metadata
+const socials = {
+  website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
+  twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
+  telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
+};
 
+let isBonded = false;
+let raydiumSocialsExtracted = false;
+
+// Extract socials from dexSocials if available
+if (Array.isArray(dexSocials)) {
+  dexSocials.forEach(pool => {
+    // If dexId is not "pumpfun", mark as bonded
+    if (pool.dexId !== "pumpfun") {
+      isBonded = true;
+    }
+
+    // Process Raydium pool if not already processed
+    if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
+      // Extract website and socials from Raydium
+      if (Array.isArray(pool.websites)) {
+        pool.websites.forEach(website => {
+          if (website && typeof website.url === "string") {
+            socials.website = `[Web](${website.url})`;
+          }
+        });
+      }
+
+      if (Array.isArray(pool.socials)) {
+        pool.socials.forEach(({ type, url }) => {
+          if (type && url) {
+            const lowerPlatform = type.toLowerCase();
+            if (lowerPlatform === "twitter" && !socials.twitter) {
+              socials.twitter = `[𝕏](${url})`;
+            }
+            if (lowerPlatform === "telegram" && !socials.telegram) {
+              socials.telegram = `[TG](${url})`;
+            }
+          }
+        });
+      }
+
+      // Mark Raydium socials as extracted
+      raydiumSocialsExtracted = true;
+    } else if (raydiumSocialsExtracted) {
+      // Extract socials from other pools after Raydium has been processed
+      if (Array.isArray(pool.websites)) {
+        pool.websites.forEach(website => {
+          if (website && typeof website.url === "string") {
+            socials.website = socials.website || `[Web](${website.url})`;
+          }
+        });
+      }
+
+      if (Array.isArray(pool.socials)) {
+        pool.socials.forEach(({ type, url }) => {
+          if (type && url) {
+            const lowerPlatform = type.toLowerCase();
+            if (lowerPlatform === "twitter" && !socials.twitter) {
+              socials.twitter = `[𝕏](${url})`;
+            }
+            if (lowerPlatform === "telegram" && !socials.telegram) {
+              socials.telegram = `[TG](${url})`;
+            }
+          }
+        });
+      }
+    }
+  });
+}
+
+
+  // Add available social links
+  message += Object.values(socials).filter(Boolean).join(" | ") + " | ";
+  message += `[Dex](https://dexscreener.com/solana/${tokenAddress})`;
   message += "\n"; // Add spacing before the next section
+  message += isBonded ? "🪢 Bonded\n\n" : "\n";
 
   const statusEmojis = {
     approved: "✅",
@@ -484,8 +619,9 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const fundingMap = await getFundingMap(holderData);
   const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
   const dexPay = await fetchDexPay(tokenAddress);
-
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, isSummary)
+  const pools = await fetchTokenMarkets(tokenAddress);
+  const dexSocials = await fetchDexSocials(pools);
+  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary)
 
   console.log("Sent message");
   const buttons = isSummary
