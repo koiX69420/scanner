@@ -645,18 +645,21 @@ bot.on("message", async (msg) => {
     const timeSinceLastRequest = now - lastRequestTime;
 
     if (timeSinceLastRequest < COOLDOWN_TIME) {
-      const remainingTime = ((COOLDOWN_TIME - timeSinceLastRequest) / 1000).toFixed(1);
-      return bot.sendMessage(chatId, `⏳ Please wait ${remainingTime} seconds before sending another token address.`);
+      return bot.sendMessage(chatId, `⏳ Please wait ${(COOLDOWN_TIME - timeSinceLastRequest) / 1000}s before sending another request.`);
     }
+  }
+
+  // Check API call availability BEFORE adding to queue
+  if (availableApiCalls < API_CALLS_PER_REQUEST) {
+    return bot.sendMessage(chatId, "⚠️ Too many requests globally! Please wait a moment.");
   }
 
   // Update user cooldown timestamp
   userCooldowns.set(chatId, now);
 
-  // Add to queue if cooldown is cleared
+  // Add to queue and process if it's the first request
   globalQueue.push({ chatId, msg });
 
-  // Start processing if queue is empty
   if (globalQueue.length === 1) processGlobalQueue();
 });
 
