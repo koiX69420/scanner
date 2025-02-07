@@ -460,13 +460,13 @@ clusterPercentages.forEach((cluster) => {
 
   // Step 3: Count fresh wallets that are NOT bundled
   numberOfFreshNotBundledWalletsInTop20 = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
-  message+=`*Top 20 Holder Summary*\n`
-  message += `⚠️ \t*${alertEmojiCount}* Sus Wallet${alertEmojiCount === 1 ? '' : 's'}\n`;
-  message += `🧩 \t*${numberOfBundledWalletsInTop20}* Bundled Wallets\n`;
-  message += `🆕 \t*${numberOfBundlesFreshWalletsInTop20}* Bundled Fresh Wallets\n`;
-  message += `🌿 \t*${numberOfFreshNotBundledWalletsInTop20}* Fresh Wallets (Not Bundled): \n`;
-  message += `❌ \t*${zeroBuyWallets}* No Purchase Transactions\n`;
-  message += `🔴 \t*${sellingWallets}* Selling Wallets\n\n`;
+  message+=`*📊 Top 20 Holder Summary*\n`
+  message += `    ⚠️ \t*${alertEmojiCount}* Sus Wallet${alertEmojiCount === 1 ? '' : 's'}\n`;
+  message += `    🧩 \t*${numberOfBundledWalletsInTop20}* Bundled Wallets\n`;
+  message += `    🆕 \t*${numberOfBundlesFreshWalletsInTop20}* Bundled Fresh Wallets\n`;
+  message += `    🌿 \t*${numberOfFreshNotBundledWalletsInTop20}* Fresh Wallets (Not Bundled): \n`;
+  message += `    ❌ \t*${zeroBuyWallets}* No Purchase Transactions\n`;
+  message += `    🔴 \t*${sellingWallets}* Selling Wallets\n\n`;
 
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
