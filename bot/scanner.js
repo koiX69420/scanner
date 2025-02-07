@@ -5,7 +5,8 @@ const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const TOP_HOLDERS = 20
 const PAGE_SIZE = 20
-async function fetchTopHolders(tokenAddress, pageSize = 20, maxHolders = 20) {
+
+async function fetchTopHolders(tokenAddress, maxHolders, pageSize) {
   console.log(`🔄 Fetching top ${maxHolders} holders for token: ${tokenAddress}`);
   if (!tokenAddress) return [];
 
@@ -131,7 +132,7 @@ async function fetchDexSocials(pools) {
         if (token_1 !== 'So11111111111111111111111111111111111111112' && token_2 !== 'So11111111111111111111111111111111111111112') {
           return { pool_id: pairId, socials: [], websites: [] };
         }
-        console.log(pool)
+
         const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
 
         try {
@@ -201,8 +202,6 @@ async function getFundingMap(topHolders) {
   return fundingMap;
 }
 
-
-
 async function fetchTokenCreationHistory(walletAddress) {
   try {
     const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_SPL_INIT_MINT&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
@@ -258,9 +257,9 @@ async function fetchDexPay(tokenAddress) {
 
 }
 
-async function getTokenHolderData(tokenAddress, supply) {
+async function getTokenHolderData(tokenAddress, supply,maxHolders,pageSize) {
   console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
-  const holders = await fetchTopHolders(tokenAddress, TOP_HOLDERS, PAGE_SIZE);
+  const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
   if (!holders.length) return [];
 
   return await Promise.all(
@@ -318,6 +317,7 @@ async function calculateClusterPercentages(holderData, fundingMap) {
 
     // Sort clusters by total holdings percentage (descending)
     clusterPercentages.sort((a, b) => b.totalHoldings - a.totalHoldings);
+
     return clusterPercentages;
   } catch (error) {
     console.error("Error calculating cluster percentages:", error);
@@ -366,7 +366,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 
   let alertEmojiCount = 0; // Counter for alert emojis
 
-  holdersData.forEach(holder => {
+  holdersData.slice(0,20).forEach(holder => {
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
       cluster ||
@@ -383,7 +383,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
   if (!isSummary) {
-    message += generateTop20Holders(holdersData, clusterPercentages);
+    message += generateTop20Holders(holdersData.slice(0,20), clusterPercentages);
   }
 
 
@@ -563,8 +563,10 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
   ).toFixed(2);
 
   let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply*\n`;
+  message+=`_Showing only top 4 recipients per bundle_\n`
+  const top5Clusters = clusterPercentages.slice(0, 3);
 
-  clusterPercentages.forEach((cluster, index) => {
+  top5Clusters.forEach((cluster, index) => {
     const senderData = holdersData.find(item => item.Address === cluster.sender);
     const senderHolding = senderData ? senderData.holding : "N/A";
 
@@ -580,8 +582,8 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
     // **Only include recipient breakdown in detailed report**
     // if (!isSummary) {
     if (true) {
-      message += `  Recipients:\n`;
-      cluster.recipients.forEach(recipient => {
+      message += `  Recipients: ${cluster.recipients.length}\n`;
+      cluster.recipients.slice(0,4).forEach(recipient => {
         const recipientData = holdersData.find(item => item.Address === recipient);
         const holding = recipientData ? recipientData["Current Holding (%)"] : "N/A";
         const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
@@ -615,13 +617,13 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   const creator = metadata.creator;
   const tokenHistory = await fetchTokenCreationHistory(creator);
-  const holderData = await getTokenHolderData(tokenAddress, metadata.supply);
-  const fundingMap = await getFundingMap(holderData);
-  const clusterPercentages = await calculateClusterPercentages(holderData, fundingMap);
+  const moreHolderData = await getTokenHolderData(tokenAddress,metadata.supply,200,40);
+  const fundingMap = await getFundingMap(moreHolderData);
+  const clusterPercentages = await calculateClusterPercentages(moreHolderData.slice(0, 20), fundingMap);
   const dexPay = await fetchDexPay(tokenAddress);
   const pools = await fetchTokenMarkets(tokenAddress);
   const dexSocials = await fetchDexSocials(pools);
-  const formattedMessage = formatHolderData(holderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary)
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary)
 
   console.log("Sent message");
   const buttons = isSummary
