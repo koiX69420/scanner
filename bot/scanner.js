@@ -573,8 +573,8 @@ function generateTooltip() {
   tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
   tooltip += "  - It received tokens but has 0 buys.\n";
   tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - Its Part of a Bundle.\n\n";
-  tooltip += "🌿 A fresh wallet with less than 10 defi swap transactions";
+  tooltip += "  - It is part of a bundle.\n";
+  tooltip += "  - It has less than 10 defi swap transactions 🌿\n";
   return tooltip;
 }
 
