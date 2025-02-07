@@ -633,7 +633,7 @@ async function processGlobalQueue() {
 }
 
 const userCooldowns = new Map(); // Store last request timestamp per user
-const COOLDOWN_TIME = 100; // 5 seconds in milliseconds
+const COOLDOWN_TIME = 5000; // 5 seconds in milliseconds
 
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
