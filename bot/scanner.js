@@ -31,7 +31,7 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
 
   // Map over holders and defi results to merge the data
   return holders.map((holder, index) => {
-    const { buys, sells, totalBought, totalSold } = defiResults[index];
+    const { buys, sells, totalBought, totalSold,transactionCount } = defiResults[index];
     return {
       Rank: holder.rank,
       Address: holder.owner,
@@ -40,6 +40,7 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
       "Total Sells": sells,
       "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
       "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
+      "Transaction Count":transactionCount
     };
   });
 }
@@ -103,7 +104,6 @@ async function fetchDexSocials(pools) {
 async function getFundingMap(topHolders) {
   const fundingMap = {}; // Map to group funding wallets for clustering
 
-  // Create a batch of wallet addresses (batch size can be adjusted for optimal performance)
   const batchSize = 10; // Adjust based on API limits and network conditions
   const batches = [];
 
@@ -285,6 +285,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
       cluster ||
+      holder["Transaction Count"] < 10 ||
       holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
       parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
       (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)
@@ -445,10 +446,12 @@ function generateTop20Holders(holdersData, clusterPercentages) {
   holdersData.forEach((holder, index) => {
     let alertEmoji = "";
     let clusterInfo = "";
-
+    let freshEmoji = "";
+    
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
       holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
+      holder["Transaction Count"] < 10 ||
       parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
       (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)) {
       alertEmoji = "⚠️";
@@ -458,11 +461,14 @@ function generateTop20Holders(holdersData, clusterPercentages) {
       clusterInfo = ` (Bundle #${clusterPercentages.indexOf(cluster) + 1})`;
       alertEmoji = "⚠️";
     }
+    if (holder["Transaction Count"] < 10) {
+      freshEmoji = "🌿";
+    }
 
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
     const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
 
-    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${alertEmoji}${clusterInfo}\n`;
+    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${alertEmoji}${freshEmoji}${clusterInfo}\n`;
     top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
   });
 
@@ -515,12 +521,13 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 // Generates the Tooltip section (only for the detailed report)
 function generateTooltip() {
   let tooltip = "\n*Tooltip*\n";
-  tooltip += `_Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%)_ (🟢: hasn't sold) (🔴:has sold) \n\n`;
-  tooltip += "🔍 _What is a Sus Wallet?\n";
+  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) \n\n`;
+  tooltip += "🔍 What is a Sus Wallet?\n";
   tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
   tooltip += "  - It received tokens but has 0 buys.\n";
   tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - Its Part of a Bundle._\n\n";
+  tooltip += "  - Its Part of a Bundle.\n\n";
+  tooltip += "🌿 A fresh wallet with less than 10 defi activities";
   return tooltip;
 }
 

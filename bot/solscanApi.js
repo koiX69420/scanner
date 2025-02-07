@@ -66,11 +66,12 @@ async function fetchTopHolders(tokenAddress, maxHolders, pageSize) {
 async function fetchDefiActivities(walletAddress, tokenAddress) {
   const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
   const activities = await makeApiCall(url);
-
+  let transactionCount = 0;
   if (!activities) return { buys: 0, sells: 0, totalBought: 0, totalSold: 0 };
 
   let buys = 0, sells = 0, totalBought = 0, totalSold = 0;
   activities.forEach(tx => {
+    transactionCount+=1;
     (Array.isArray(tx.routers) ? tx.routers : [tx.routers]).forEach(router => {
       if (router.token1 === tokenAddress) {
         sells++;
@@ -81,8 +82,7 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
       }
     });
   });
-
-  return { buys, sells, totalBought, totalSold };
+  return { buys, sells, totalBought, totalSold,transactionCount };
 }
 
 // Function to fetch token metadata
