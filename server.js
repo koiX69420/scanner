@@ -4,10 +4,8 @@ const http = require('http');
 
 require('dotenv').config();
 
-require('./bot/freshness');
 require('./bot/scanner');
 require('./bot/solscanApi');
-require('./util/util');
 
 const app = express();
 const PORT = process.env.PORT || 5000;

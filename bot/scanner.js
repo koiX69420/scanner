@@ -3,10 +3,10 @@ const bot = require("../tg/tg");
 
 
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const MAX_HOLDERS = 100
+const MAX_HOLDERS = 60
 const MAX_API_CALLS_PER_MINUTE = 1000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
-const API_CALLS_PER_REQUEST = MAX_HOLDERS*2+30;
+const API_CALLS_PER_REQUEST = MAX_HOLDERS * 2 + 30;
 const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
 
 let availableApiCalls = MAX_API_CALLS_PER_MINUTE; // Start with full quota
@@ -31,7 +31,7 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
 
   // Map over holders and defi results to merge the data
   return holders.map((holder, index) => {
-    const { buys, sells, totalBought, totalSold,transactionCount } = defiResults[index];
+    const { buys, sells, totalBought, totalSold, transactionCount } = defiResults[index];
     return {
       Rank: holder.rank,
       Address: holder.owner,
@@ -40,7 +40,7 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
       "Total Sells": sells,
       "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
       "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-      "Transaction Count":transactionCount
+      "Transaction Count": transactionCount
     };
   });
 }
@@ -66,7 +66,7 @@ async function fetchDexSocials(pools) {
         try {
           const response = await fetch(url, { method: "GET" });
           if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          
+
           const result = await response.json();
 
           // Get the first valid pair from the response
@@ -150,7 +150,7 @@ async function getFundingMap(topHolders) {
 async function fetchTransactionsForBatch(holderAddresses) {
   // Create a batch of promises for fetching transactions
   const fetchPromises = holderAddresses.map(walletAddress => fetchSolTransfers(walletAddress));
-  
+
   // Wait for all transactions to be fetched concurrently for the batch
   return await Promise.all(fetchPromises);
 }
@@ -159,7 +159,7 @@ async function fetchTransactionsForBatch(holderAddresses) {
 
 async function fetchDexPay(tokenAddress) {
   const url = `https://api.dexscreener.com/orders/v1/solana/${tokenAddress}`;
-  
+
   try {
     const response = await fetch(url, { method: 'GET', headers: {} });
 
@@ -281,7 +281,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 
   let alertEmojiCount = 0; // Counter for alert emojis
 
-  holdersData.slice(0,20).forEach(holder => {
+  holdersData.slice(0, 20).forEach(holder => {
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
       cluster ||
@@ -294,12 +294,12 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
     }
   });
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, holdersData.slice(0, 20), clusterPercentages);
 
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   // **Only include Top 20 holders for the detailed report**
   if (!isSummary) {
-    message += generateTop20Holders(holdersData.slice(0,20), clusterPercentages);
+    message += generateTop20Holders(holdersData.slice(0, 20), clusterPercentages);
   }
 
 
@@ -312,7 +312,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 // Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
   const firstMintDate = formatTimestamp(metadata.created_time || metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
@@ -321,77 +321,77 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `📅 On ${firstMintDate}\n`;
   message += `🗣️ `
   // Extract socials from metadata
-// Extract socials from metadata
-const socials = {
-  website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
-  twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
-  telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
-};
+  // Extract socials from metadata
+  const socials = {
+    website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
+    twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
+    telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
+  };
 
-let isBonded = false;
-let raydiumSocialsExtracted = false;
+  let isBonded = false;
+  let raydiumSocialsExtracted = false;
 
-// Extract socials from dexSocials if available
-if (Array.isArray(dexSocials)) {
-  dexSocials.forEach(pool => {
-    // If dexId is not "pumpfun", mark as bonded
-    if (pool.dexId !== "pumpfun") {
-      isBonded = true;
-    }
-
-    // Process Raydium pool if not already processed
-    if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
-      // Extract website and socials from Raydium
-      if (Array.isArray(pool.websites)) {
-        pool.websites.forEach(website => {
-          if (website && typeof website.url === "string") {
-            socials.website = `[Web](${website.url})`;
-          }
-        });
+  // Extract socials from dexSocials if available
+  if (Array.isArray(dexSocials)) {
+    dexSocials.forEach(pool => {
+      // If dexId is not "pumpfun", mark as bonded
+      if (pool.dexId !== "pumpfun") {
+        isBonded = true;
       }
 
-      if (Array.isArray(pool.socials)) {
-        pool.socials.forEach(({ type, url }) => {
-          if (type && url) {
-            const lowerPlatform = type.toLowerCase();
-            if (lowerPlatform === "twitter" && !socials.twitter) {
-              socials.twitter = `[𝕏](${url})`;
+      // Process Raydium pool if not already processed
+      if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
+        // Extract website and socials from Raydium
+        if (Array.isArray(pool.websites)) {
+          pool.websites.forEach(website => {
+            if (website && typeof website.url === "string") {
+              socials.website = `[Web](${website.url})`;
             }
-            if (lowerPlatform === "telegram" && !socials.telegram) {
-              socials.telegram = `[TG](${url})`;
-            }
-          }
-        });
-      }
+          });
+        }
 
-      // Mark Raydium socials as extracted
-      raydiumSocialsExtracted = true;
-    } else if (raydiumSocialsExtracted) {
-      // Extract socials from other pools after Raydium has been processed
-      if (Array.isArray(pool.websites)) {
-        pool.websites.forEach(website => {
-          if (website && typeof website.url === "string") {
-            socials.website = socials.website || `[Web](${website.url})`;
-          }
-        });
-      }
+        if (Array.isArray(pool.socials)) {
+          pool.socials.forEach(({ type, url }) => {
+            if (type && url) {
+              const lowerPlatform = type.toLowerCase();
+              if (lowerPlatform === "twitter" && !socials.twitter) {
+                socials.twitter = `[𝕏](${url})`;
+              }
+              if (lowerPlatform === "telegram" && !socials.telegram) {
+                socials.telegram = `[TG](${url})`;
+              }
+            }
+          });
+        }
 
-      if (Array.isArray(pool.socials)) {
-        pool.socials.forEach(({ type, url }) => {
-          if (type && url) {
-            const lowerPlatform = type.toLowerCase();
-            if (lowerPlatform === "twitter" && !socials.twitter) {
-              socials.twitter = `[𝕏](${url})`;
+        // Mark Raydium socials as extracted
+        raydiumSocialsExtracted = true;
+      } else if (raydiumSocialsExtracted) {
+        // Extract socials from other pools after Raydium has been processed
+        if (Array.isArray(pool.websites)) {
+          pool.websites.forEach(website => {
+            if (website && typeof website.url === "string") {
+              socials.website = socials.website || `[Web](${website.url})`;
             }
-            if (lowerPlatform === "telegram" && !socials.telegram) {
-              socials.telegram = `[TG](${url})`;
+          });
+        }
+
+        if (Array.isArray(pool.socials)) {
+          pool.socials.forEach(({ type, url }) => {
+            if (type && url) {
+              const lowerPlatform = type.toLowerCase();
+              if (lowerPlatform === "twitter" && !socials.twitter) {
+                socials.twitter = `[𝕏](${url})`;
+              }
+              if (lowerPlatform === "telegram" && !socials.telegram) {
+                socials.telegram = `[TG](${url})`;
+              }
             }
-          }
-        });
+          });
+        }
       }
-    }
-  });
-}
+    });
+  }
 
 
   // Add available social links
@@ -420,7 +420,54 @@ if (Array.isArray(dexSocials)) {
   } else {
     message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   }
-  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
+
+  let sellingWallets = 0
+  let zeroBuyWallets = 0
+  let numberOfBundledWalletsInTop20 = 0;
+  let numberOfBundlesFreshWalletsInTop20 = 0;
+  let numberOfFreshNotBundledWalletsInTop20 = 0;
+
+  let freshWallets = new Set(); // Set to store fresh wallets
+  let bundledWallets = new Set(); // Set to store unique bundled wallets
+
+  // Step 1: Identify fresh wallets in the top 20
+  top20Data.forEach((holder) => {
+    if (parseFloat(holder["Total Sold (%)"]) > 0) sellingWallets += 1;
+    if (holder["Total Buys"] === 0) zeroBuyWallets += 1;
+
+    // If wallet has less than 10 transactions, it's fresh
+    if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
+  });
+
+
+// Step 2: Find bundled wallets in the top 20
+clusterPercentages.forEach((cluster) => {
+  cluster.recipients.forEach(recipient => {
+    // Check if recipient is in the top 20 holders
+    const isTop20 = top20Data.some(holder => holder.Address === recipient);
+    
+    if (isTop20 && !bundledWallets.has(recipient)) { 
+      bundledWallets.add(recipient);
+      numberOfBundledWalletsInTop20++; // ✅ Only count ONCE per wallet
+
+      // Check if it's a fresh wallet
+      if (freshWallets.has(recipient)) {
+        numberOfBundlesFreshWalletsInTop20++;
+      }
+    }
+  });
+});
+
+  // Step 3: Count fresh wallets that are NOT bundled
+  numberOfFreshNotBundledWalletsInTop20 = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
+  message+=`*Top 20 Holder Summary*\n`
+  message += `⚠️ \t*${alertEmojiCount}* Sus Wallet${alertEmojiCount === 1 ? '' : 's'}\n`;
+  message += `🧩 \t*${numberOfBundledWalletsInTop20}* Bundled Wallets\n`;
+  message += `🆕 \t*${numberOfBundlesFreshWalletsInTop20}* Bundled Fresh Wallets\n`;
+  message += `🌿 \t*${numberOfFreshNotBundledWalletsInTop20}* Fresh Wallets (Not Bundled): \n`;
+  message += `❌ \t*${zeroBuyWallets}* No Purchase Transactions\n`;
+  message += `🔴 \t*${sellingWallets}* Selling Wallets\n\n`;
+
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
@@ -447,7 +494,7 @@ function generateTop20Holders(holdersData, clusterPercentages) {
     let alertEmoji = "";
     let clusterInfo = "";
     let freshEmoji = "";
-    
+
     const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
     if (
       holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
@@ -484,7 +531,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
   ).toFixed(2);
 
   let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply*\n`;
-  message+=`_Showing only top 4 recipients per bundle_\n`
+  message += `_Showing only top 4 recipients per bundle_\n`
   const top5Clusters = clusterPercentages.slice(0, 3);
 
   top5Clusters.forEach((cluster, index) => {
@@ -504,7 +551,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
     // if (!isSummary) {
     if (true) {
       message += `  Recipients: ${cluster.recipients.length}\n`;
-      cluster.recipients.slice(0,4).forEach(recipient => {
+      cluster.recipients.slice(0, 4).forEach(recipient => {
         const recipientData = holdersData.find(item => item.Address === recipient);
         const holding = recipientData ? recipientData["Current Holding (%)"] : "N/A";
         const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
@@ -540,7 +587,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-  
+
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, 40);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
@@ -549,7 +596,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
 
   // Wait for all the independent data to finish fetching
-  const [moreHolderData, fundingMap, dexPay, pools,tokenHistory] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise,tokenHistoryPromise]);
+  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise]);
 
   // Calculate cluster percentages after fetching the required data
   const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
@@ -565,16 +612,16 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   // Create buttons based on the summary flag
   const buttons = isSummary
     ? [
-        [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
-        [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
-      ]
+      [{ text: "🔎 Show Details", callback_data: `showDetails_${tokenAddress}` }],
+      [{ text: "🔄 Refresh Summary", callback_data: `refresh_${tokenAddress}` }],
+    ]
     : [
-        [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
-        [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
-      ];
-      console.timeEnd(timeLabel);
-      const apiCalls = await getApiCallCount()
-      console.log(`Api Calls: ${apiCalls}`)
+      [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
+      [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
+    ];
+  console.timeEnd(timeLabel);
+  const apiCalls = await getApiCallCount()
+  console.log(`Api Calls: ${apiCalls}`)
   return {
     text: formattedMessage,
     replyMarkup: { inline_keyboard: buttons },
@@ -656,11 +703,6 @@ bot.on("message", async (msg) => {
     }
   }
 
-  // Check API call availability BEFORE adding to queue
-  if (availableApiCalls < API_CALLS_PER_REQUEST) {
-    return bot.sendMessage(chatId, "⚠️ Too many requests globally! Please wait a moment.");
-  }
-
   // Update user cooldown timestamp
   userCooldowns.set(chatId, now);
 
@@ -704,11 +746,6 @@ async function processCallbackQuery(chatId, query) {
   if (data.startsWith("refresh_") || data.startsWith("showDetails_")) {
     const tokenAddress = data.split("_")[1];
     const isSummary = !data.startsWith("showDetails_"); // If it's "showDetails_", set isSummary to false
-
-    // Check API call availability BEFORE processing the callback
-    if (availableApiCalls < API_CALLS_PER_REQUEST) {
-      return bot.sendMessage(chatId, "⚠️ Too many requests globally! Please wait a moment.");
-    }
 
     // Answer the callback query immediately to acknowledge it
     bot.answerCallbackQuery(query.id, {
