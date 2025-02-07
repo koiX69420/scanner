@@ -419,7 +419,7 @@ if (Array.isArray(dexSocials)) {
   } else {
     message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   }
-  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${MAX_HOLDERS} Holders* ⚠️\n\n`;
+  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top 20 Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
