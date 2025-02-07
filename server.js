@@ -6,6 +6,7 @@ require('dotenv').config();
 
 require('./bot/freshness');
 require('./bot/scanner');
+require('./bot/solscanApi');
 require('./util/util');
 
 const app = express();

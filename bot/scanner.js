@@ -1,122 +1,49 @@
 require("dotenv").config();
 const bot = require("../tg/tg");
 
-const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY;
+
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const TOP_HOLDERS = 20
-const PAGE_SIZE = 20
+const MAX_HOLDERS = 100
+const MAX_API_CALLS_PER_MINUTE = 1000;
+// we have holders*2+15 calls, we need double the amount as buffer to never error
+const API_CALLS_PER_REQUEST = MAX_HOLDERS*4+30;
+const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
 
-async function fetchTopHolders(tokenAddress, maxHolders, pageSize) {
-  console.log(`🔄 Fetching top ${maxHolders} holders for token: ${tokenAddress}`);
-  if (!tokenAddress) return [];
+let availableApiCalls = MAX_API_CALLS_PER_MINUTE; // Start with full quota
+const {
+  fetchTopHolders,
+  fetchDefiActivities,
+  fetchTokenMetadata,
+  fetchTokenMarkets,
+  fetchTokenCreationHistory,
+  fetchSolTransfers,
+  getApiCallCount
+} = require('./solscanApi');
+// Refactored main function to fetch all token holder data and related activities concurrently
+async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
+  console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
+  const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
+  if (!holders.length) return [];
 
-  let allHolders = [];
-  let currentPage = 1;
-  let totalFetched = 0;
+  // Concurrently fetch Defi activities for all holders
+  const defiPromises = holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress));
+  const defiResults = await Promise.all(defiPromises);
 
-  try {
-    while (totalFetched < maxHolders) {
-      const url = `https://pro-api.solscan.io/v2.0/token/holders?address=${encodeURIComponent(tokenAddress)}&page=${currentPage}&page_size=${pageSize}`;
-
-      const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-      const data = await response.json();
-
-      if (!data.success || !data.data || !data.data.items || data.data.items.length === 0) {
-        console.error("⚠️ Unexpected API response format or no more holders:", data);
-        break;
-      }
-
-      const filteredHolders = data.data.items
-        .filter(holder => holder.owner !== "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1")
-        .map(holder => ({
-          address: holder.address,
-          amount: holder.amount,
-          decimals: holder.decimals,
-          owner: holder.owner,
-          rank: holder.rank,
-        }));
-
-      allHolders = [...allHolders, ...filteredHolders];
-      totalFetched = allHolders.length;
-
-      if (data.data.items.length < pageSize) break; // Stop if API returned fewer results than pageSize
-      currentPage++;
-    }
-
-    return allHolders.slice(0, maxHolders);
-  } catch (error) {
-    console.error(`❌ Error fetching holders for ${tokenAddress}:`, error.message);
-    return [];
-  }
+  // Map over holders and defi results to merge the data
+  return holders.map((holder, index) => {
+    const { buys, sells, totalBought, totalSold } = defiResults[index];
+    return {
+      Rank: holder.rank,
+      Address: holder.owner,
+      "Current Holding (%)": ((holder.amount / supply) * 100).toFixed(2),
+      "Total Buys": buys,
+      "Total Sells": sells,
+      "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
+      "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
+    };
+  });
 }
 
-async function fetchTokenMetadata(tokenAddress) {
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/token/meta?address=${encodeURIComponent(tokenAddress)}`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const data = await response.json();
-    return data.data; // Default supply to 1 to prevent division errors
-  } catch (error) {
-    console.error(`❌ Error fetching token metadata:`, error.message);
-    return { supply: 1 };
-  }
-}
-
-async function fetchDefiActivities(walletAddress, tokenAddress) {
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const activities = (await response.json())?.data || [];
-
-    let buys = 0, sells = 0, totalBought = 0, totalSold = 0;
-    activities.forEach(tx => {
-      (Array.isArray(tx.routers) ? tx.routers : [tx.routers]).forEach(router => {
-        if (router.token1 === tokenAddress) {
-          sells++;
-          totalSold += router.amount1 || 0;
-        } else if (router.token2 === tokenAddress) {
-          buys++;
-          totalBought += router.amount2 || 0;
-        }
-      });
-    });
-
-    return { buys, sells, totalBought, totalSold };
-  } catch (error) {
-    console.error(`❌ Error fetching activity for ${walletAddress}:`, error.message);
-    return { buys: 0, sells: 0, totalBought: 0, totalSold: 0 };
-  }
-}
-
-async function fetchSolTransfers(walletAddress) {
-
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/account/transfer?address=${walletAddress}&activity_type[]=ACTIVITY_SPL_TRANSFER&value[]=5&token=So11111111111111111111111111111111111111111&page=1&page_size=40&sort_by=block_time&sort_order=desc`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const data = await response.json();
-    if (data.success) {
-      return data.data;
-    }
-    return []
-  } catch (error) {
-    console.error(`❌ Error fetching token creation history for ${walletAddress}:`, error.message);
-    return [];
-  }
-}
-async function fetchTokenMarkets(tokenAddress) {
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/token/markets?token[]=${tokenAddress}&page=1&page_size=10`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const data = await response.json();
-    if (data.success) {
-      return data.data;
-    }
-    return []
-  } catch (error) {
-    console.error(`❌ Error fetching fetchTokenMarkets for ${tokenAddress}:`, error.message);
-    return [];
-  }
-}
 
 async function fetchDexSocials(pools) {
   try {
@@ -176,107 +103,95 @@ async function fetchDexSocials(pools) {
 async function getFundingMap(topHolders) {
   const fundingMap = {}; // Map to group funding wallets for clustering
 
-  // Use a map to fetch transactions for all holders concurrently
-  const fetchPromises = topHolders.map(holder => fetchSolTransfers(holder.Address));
-  const allSolTransactions = await Promise.all(fetchPromises); // Wait for all transactions to be fetched
+  // Create a batch of wallet addresses (batch size can be adjusted for optimal performance)
+  const batchSize = 10; // Adjust based on API limits and network conditions
+  const batches = [];
 
-  // Now iterate over the transactions and group them into fundingMap
-  for (let i = 0; i < topHolders.length; i++) {
-    const holder = topHolders[i].Address;
-    const solTransactions = allSolTransactions[i]; // Get the transactions for this holder
-
-    // Iterate through transactions and populate the funding map
-    for (const transaction of solTransactions) {
-      const recipient = transaction.to_address;
-      const sender = transaction.from_address;
-
-      // If the recipient is the current holder, add sender to funding map
-      if (recipient === holder) {
-        if (!fundingMap[sender]) {
-          fundingMap[sender] = new Set();
-        }
-        fundingMap[sender].add(holder);
-      }
-    }
+  // Split topHolders into batches for better concurrency
+  for (let i = 0; i < topHolders.length; i += batchSize) {
+    batches.push(topHolders.slice(i, i + batchSize));
   }
+
+  // Fetch transactions for each batch of holders concurrently
+  const fetchPromises = batches.map(batch => {
+    const holderAddresses = batch.map(holder => holder.Address);
+    return fetchTransactionsForBatch(holderAddresses);
+  });
+
+  // Wait for all batches to be fetched
+  const allSolTransactions = await Promise.all(fetchPromises);
+
+  // Iterate over the fetched transactions and populate the funding map
+  allSolTransactions.forEach((batchTransactions, batchIndex) => {
+    const batchHolders = batches[batchIndex]; // Get holders for the current batch
+
+    batchTransactions.forEach((solTransactions, holderIndex) => {
+      const holder = batchHolders[holderIndex].Address;
+
+      // Iterate through transactions and populate the funding map
+      solTransactions.forEach(transaction => {
+        const recipient = transaction.to_address;
+        const sender = transaction.from_address;
+
+        // If the recipient is the current holder, add sender to funding map
+        if (recipient === holder) {
+          if (!fundingMap[sender]) {
+            fundingMap[sender] = new Set();
+          }
+          fundingMap[sender].add(holder); // Add holder to sender's list
+        }
+      });
+    });
+  });
+
   return fundingMap;
 }
-
-async function fetchTokenCreationHistory(walletAddress) {
-  try {
-    const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_SPL_INIT_MINT&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
-    const response = await fetch(url, { method: "get", headers: { token: SOLSCAN_API_KEY } });
-    const activities = (await response.json())?.data || [];
-    // Map through transactions and fetch metadata for each created token
-    const tokensCreated = await Promise.all(
-      activities.flatMap(tx => {
-        const routers = Array.isArray(tx.routers) ? tx.routers : [tx.routers];
-        return routers
-          .filter(router => router.token1) // Ensure token1 exists
-          .map(async router => {
-            const metadata = await fetchTokenMetadata(router.token1);
-            return {
-              tokenAddress: router.token1,
-              metadata,
-            };
-          });
-      })
-    );
-    return tokensCreated.filter(Boolean); // Remove any undefined/null values
-
-  } catch (error) {
-    console.error(`❌ Error fetching token creation history for ${walletAddress}:`, error.message);
-    return [];
-  }
+// Fetch transactions for a batch of holders
+async function fetchTransactionsForBatch(holderAddresses) {
+  // Create a batch of promises for fetching transactions
+  const fetchPromises = holderAddresses.map(walletAddress => fetchSolTransfers(walletAddress));
+  
+  // Wait for all transactions to be fetched concurrently for the batch
+  return await Promise.all(fetchPromises);
 }
 
+
+
 async function fetchDexPay(tokenAddress) {
+  const url = `https://api.dexscreener.com/orders/v1/solana/${tokenAddress}`;
+  
   try {
-    const response = await fetch(`https://api.dexscreener.com/orders/v1/solana/${tokenAddress}`, {
-      method: 'GET',
-      headers: {},
-    });
-    const data = await response.json();
-    if (data.length > 0) {
-      return data
-    } else {
+    const response = await fetch(url, { method: 'GET', headers: {} });
+
+    // Check for valid response status
+    if (!response.ok) {
+      console.error(`❌ Error fetching data for ${tokenAddress}: Status ${response.status}`);
       return {
         type: "tokenProfile",
         status: "unreceived",
         paymentTimestamp: 0
-      }
+      };
     }
+
+    const data = await response.json();
+
+    // Return data if found; otherwise, return default value
+    return data.length > 0 ? data : {
+      type: "tokenProfile",
+      status: "unreceived",
+      paymentTimestamp: 0
+    };
   } catch (error) {
-    console.error(`❌ Error fetching dex pa for ${tokenAddress}:`, error.message);
+    console.error(`❌ Error fetching dex pay for ${tokenAddress}:`, error.message);
     return {
       type: "tokenProfile",
       status: "unreceived",
       paymentTimestamp: 0
-    }
+    };
   }
-
 }
 
-async function getTokenHolderData(tokenAddress, supply,maxHolders,pageSize) {
-  console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
-  const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
-  if (!holders.length) return [];
 
-  return await Promise.all(
-    holders.map(async holder => {
-      const { buys, sells, totalBought, totalSold } = await fetchDefiActivities(holder.owner, tokenAddress);
-      return {
-        Rank: holder.rank,
-        Address: holder.owner,
-        "Current Holding (%)": ((holder.amount / supply) * 100).toFixed(2),
-        "Total Buys": buys,
-        "Total Sells": sells,
-        "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
-        "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-      };
-    })
-  );
-}
 
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
@@ -504,7 +419,7 @@ if (Array.isArray(dexSocials)) {
   } else {
     message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   }
-  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${TOP_HOLDERS} Holders* ⚠️\n\n`;
+  message += `⚠️ *${alertEmojiCount} Sus Wallet${alertEmojiCount === 1 ? '' : 's'} in Top ${MAX_HOLDERS} Holders* ⚠️\n\n`;
 
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
@@ -613,18 +528,21 @@ function generateTooltip() {
 
 
 async function generateTokenMessage(tokenAddress, isSummary = true) {
+  const timeLabel = `generateTokenMessage_${tokenAddress}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
+  console.time(timeLabel); // Start the timer with a unique label
+
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-  const tokenHistory = await fetchTokenCreationHistory(metadata.creator);
-
+  
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
-  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, 200, 40);
+  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, 40);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
   const dexPayPromise = fetchDexPay(tokenAddress);
   const poolsPromise = fetchTokenMarkets(tokenAddress);
+  const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
 
   // Wait for all the independent data to finish fetching
-  const [moreHolderData, fundingMap, dexPay, pools] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise]);
+  const [moreHolderData, fundingMap, dexPay, pools,tokenHistory] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise,tokenHistoryPromise]);
 
   // Calculate cluster percentages after fetching the required data
   const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
@@ -647,7 +565,9 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
         [{ text: "🔄 Refresh Details", callback_data: `showDetails_${tokenAddress}` }],
         [{ text: "🔎 Show Summary", callback_data: `refresh_${tokenAddress}` }],
       ];
-
+      console.timeEnd(timeLabel);
+      const apiCalls = await getApiCallCount()
+      console.log(`Api Calls: ${apiCalls}`)
   return {
     text: formattedMessage,
     replyMarkup: { inline_keyboard: buttons },
@@ -656,7 +576,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
 async function sendMessageWithButton(chatId, tokenAddress) {
   const { text, replyMarkup } = await generateTokenMessage(tokenAddress);
-  console.log("Sent message")
+  console.log("Sent message");
   return bot.sendMessage(chatId, text, {
     parse_mode: "Markdown",
     reply_markup: replyMarkup,
@@ -664,19 +584,99 @@ async function sendMessageWithButton(chatId, tokenAddress) {
   });
 }
 
-bot.on("message", async msg => {
-  if (!msg.text) return;
 
-  const tokenAddress = msg.text.trim();
-  if (!SOLANA_ADDRESS_REGEX.test(tokenAddress)) {
-    bot.sendMessage(msg.chat.id, "Send me a valid Solana token address", { parse_mode: "Markdown" });
+
+// Automatically refill tokens every second
+setInterval(() => {
+  availableApiCalls = Math.min(MAX_API_CALLS_PER_MINUTE, availableApiCalls + REFILL_RATE);
+}, 1000);
+
+const globalQueue = []; // Request queue
+const PROCESSING = Symbol("processing"); // Mark requests being processed
+
+async function processGlobalQueue() {
+  if (globalQueue.length === 0) return; // No requests to process
+
+  const { chatId, msg, callbackQuery } = globalQueue[0];
+
+  // Ensure enough API tokens are available before proceeding
+  if (availableApiCalls < API_CALLS_PER_REQUEST) {
+    console.log(`⏳ Not enough API calls available. Waiting... (${availableApiCalls} left and ${API_CALLS_PER_REQUEST} to go)`);
+    setTimeout(processGlobalQueue, 1000); // Check again in 1 sec
     return;
   }
 
+  // Mark the request as being processed
+  if (msg) msg[PROCESSING] = true;
+  if (callbackQuery) callbackQuery[PROCESSING] = true;
+
+  try {
+    // Deduct API calls
+    availableApiCalls -= API_CALLS_PER_REQUEST;
+    console.log(`🔄 Processing request... Remaining API calls: ${availableApiCalls}`);
+
+    if (msg) {
+      await processRequest(chatId, msg);
+    }
+    if (callbackQuery) {
+      await processCallbackQuery(chatId, callbackQuery);
+    }
+  } catch (error) {
+    console.error("❌ Error processing request:", error.message);
+  }
+
+  // Remove processed request from queue
+  globalQueue.shift();
+
+  // Process the next request
+  processGlobalQueue();
+}
+
+const userCooldowns = new Map(); // Store last request timestamp per user
+const COOLDOWN_TIME = 100; // 5 seconds in milliseconds
+
+bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
+  const now = Date.now();
+
+  // Check if user is on cooldown
+  if (userCooldowns.has(chatId)) {
+    const lastRequestTime = userCooldowns.get(chatId);
+    const timeSinceLastRequest = now - lastRequestTime;
+
+    if (timeSinceLastRequest < COOLDOWN_TIME) {
+      const remainingTime = ((COOLDOWN_TIME - timeSinceLastRequest) / 1000).toFixed(1);
+      return bot.sendMessage(chatId, `⏳ Please wait ${remainingTime} seconds before sending another token address.`);
+    }
+  }
+
+  // Update user cooldown timestamp
+  userCooldowns.set(chatId, now);
+
+  // Add to queue if cooldown is cleared
+  globalQueue.push({ chatId, msg });
+
+  // Start processing if queue is empty
+  if (globalQueue.length === 1) processGlobalQueue();
+});
+
+bot.on("callback_query", async (query) => {
+  globalQueue.push({ chatId: query.message.chat.id, callbackQuery: query });
+  if (globalQueue.length === 1) processGlobalQueue();
+});
+
+// Function to process each message (from the global queue)
+async function processRequest(chatId, msg) {
+  const tokenAddress = msg.text.trim();
+
+  if (!SOLANA_ADDRESS_REGEX.test(tokenAddress)) {
+    return bot.sendMessage(chatId, "Send me a valid Solana token address", { parse_mode: "Markdown" });
+  }
+
   const loadingMessage = await bot.sendMessage(chatId, `🔍 Fetching data for *${tokenAddress}*...\nPlease wait...`, { parse_mode: "Markdown" });
 
   try {
+    // Process the request (calling the function to generate message with buttons, etc.)
     const sentMessage = await sendMessageWithButton(chatId, tokenAddress);
     await bot.deleteMessage(chatId, loadingMessage.message_id);
     console.log(`📤 Sent data to user for token: ${tokenAddress}`);
@@ -684,23 +684,33 @@ bot.on("message", async msg => {
     bot.sendMessage(chatId, "❌ An error occurred while processing the request. Please try again later.");
     console.error("Error in /fresh command:", error.message);
   }
-});
+}
 
-bot.on("callback_query", async query => {
+// Function to handle callback queries (from the global queue)
+async function processCallbackQuery(chatId, query) {
   const data = query.data;
-  const chatId = query.message.chat.id;
   const messageId = query.message.message_id;
 
   if (data.startsWith("refresh_") || data.startsWith("showDetails_")) {
     const tokenAddress = data.split("_")[1];
     const isSummary = !data.startsWith("showDetails_"); // If it's "showDetails_", set isSummary to false
 
+    // Answer the callback query immediately to acknowledge it
     bot.answerCallbackQuery(query.id, {
       text: isSummary ? "Refreshing data..." : "Fetching details...",
       show_alert: false,
     });
 
     try {
+      // Edit the message to show loading status and remove the buttons
+      await bot.editMessageText("🔄 Loading , please wait...", {
+        chat_id: chatId,
+        message_id: messageId,
+        parse_mode: "Markdown",
+        reply_markup: { inline_keyboard: [[{ text: "🔄 Loading... (No action)", callback_data: "noop" }]] }
+      });
+
+      // Generate the token message with buttons after processing
       const { text, replyMarkup } = await generateTokenMessage(tokenAddress, isSummary);
       bot.editMessageText(text, {
         chat_id: chatId,
@@ -714,6 +724,4 @@ bot.on("callback_query", async query => {
       bot.sendMessage(chatId, "❌ An error occurred while processing your request. Please try again later.");
     }
   }
-});
-
-console.log("🚀 Telegram Bot is running...");
+}
