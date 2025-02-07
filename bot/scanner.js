@@ -6,7 +6,7 @@ const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 100
 const MAX_API_CALLS_PER_MINUTE = 1000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
-const API_CALLS_PER_REQUEST = MAX_HOLDERS*4+30;
+const API_CALLS_PER_REQUEST = MAX_HOLDERS*2+30;
 const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
 
 let availableApiCalls = MAX_API_CALLS_PER_MINUTE; // Start with full quota
@@ -697,6 +697,11 @@ async function processCallbackQuery(chatId, query) {
   if (data.startsWith("refresh_") || data.startsWith("showDetails_")) {
     const tokenAddress = data.split("_")[1];
     const isSummary = !data.startsWith("showDetails_"); // If it's "showDetails_", set isSummary to false
+
+    // Check API call availability BEFORE processing the callback
+    if (availableApiCalls < API_CALLS_PER_REQUEST) {
+      return bot.sendMessage(chatId, "⚠️ Too many requests globally! Please wait a moment.");
+    }
 
     // Answer the callback query immediately to acknowledge it
     bot.answerCallbackQuery(query.id, {
