@@ -257,13 +257,24 @@ async function calculateClusterPercentages(holderData, fundingMap) {
 }
 
 function formatTimestamp(timestamp) {
+
   if (!timestamp || isNaN(timestamp)) return "❌ Invalid Time"; // Handle bad data
 
-  console.log("Raw Timestamp:", timestamp); // Debugging
+  let correctedTimestamp;
 
-  // Ensure timestamp is in seconds, not milliseconds
-  const isMilliseconds = timestamp > 9999999999; // If it's greater than year 2286, it's in ms
-  const correctedTimestamp = isMilliseconds ? timestamp : timestamp * 1000;
+  if (timestamp < 1e12) {
+    // Seconds (10-digit)
+    correctedTimestamp = timestamp * 1000;
+  } else if (timestamp < 1e15) {
+    // Milliseconds (13-digit)
+    correctedTimestamp = timestamp;
+  } else if (timestamp < 1e18) {
+    // Microseconds (16-digit) → Convert to milliseconds
+    correctedTimestamp = Math.floor(timestamp / 1e3);
+  } else {
+    // Nanoseconds (19-digit) → Convert to milliseconds
+    correctedTimestamp = Math.floor(timestamp / 1e6);
+  }
 
   const date = new Date(correctedTimestamp);
   return date.toLocaleString("en-US", {
@@ -317,7 +328,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 
 // Generates the common message structure
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay) {
-  const firstMintDate = formatTimestamp(metadata.first_mint_time);
+  const firstMintDate = formatTimestamp(metadata.created_time || metadata.first_mint_time);
 
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   message += `\`${tokenAddress}\`\n\n`;
