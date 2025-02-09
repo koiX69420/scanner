@@ -343,8 +343,10 @@ function formatDexUpdates(dexPay) {
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
-  const socials = extractSocialLinks(metadata, dexSocials);
-  return `🗣️ ` + Object.values(socials).filter(Boolean).join(" | ") + ` | [Dex](https://dexscreener.com/solana/${tokenAddress})\n\n`;
+  const {socials,isBonded} = extractSocialLinks(metadata, dexSocials);
+  let message =  `🗣️ ` + Object.values(socials).filter(Boolean).join(" | ") + ` | [Dex](https://dexscreener.com/solana/${tokenAddress})\n`;
+  message += isBonded ? "🪢 Bonded\n\n" : "\n";
+  return message
 }
 
 function extractSocialLinks(metadata, dexSocials) {
@@ -353,16 +355,47 @@ function extractSocialLinks(metadata, dexSocials) {
     twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
     telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
   };
-  dexSocials.forEach(pool => {
-    pool.socials?.forEach(({ type, url }) => {
-      if (type && url) {
-        const lowerPlatform = type.toLowerCase();
-        if (lowerPlatform === "twitter") socials.twitter = `[𝕏](${url})`;
-        if (lowerPlatform === "telegram") socials.telegram = `[TG](${url})`;
+
+  let isBonded = false;
+  let raydiumSocialsExtracted = false;
+
+  // Extract socials from dexSocials if available
+  if (Array.isArray(dexSocials)) {
+    dexSocials.forEach(pool => {
+      // If dexId is not "pumpfun", mark as bonded
+      if (pool.dexId !== "pumpfun") {
+        isBonded = true;
+      }
+
+      // Process Raydium pool if not already processed
+      if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
+        // Extract website and socials from Raydium
+        if (Array.isArray(pool.websites)) {
+          pool.websites.forEach(website => {
+            if (website && typeof website.url === "string") {
+              socials.website = `[Web](${website.url})`;
+            }
+          });
+        }
+
+        if (Array.isArray(pool.socials)) {
+          pool.socials.forEach(({ type, url }) => {
+            if (type && url) {
+              const lowerPlatform = type.toLowerCase();
+              if (lowerPlatform === "twitter" && !socials.twitter) {
+                socials.twitter = `[𝕏](${url})`;
+              }
+              if (lowerPlatform === "telegram" && !socials.telegram) {
+                socials.telegram = `[TG](${url})`;
+              }
+            }
+          });
+        }
+        raydiumSocialsExtracted=true;
       }
     });
-  });
-  return socials;
+  }
+  return {socials,isBonded};
 }
 
 function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling) {
@@ -375,30 +408,29 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
-  message += `\`${tokenAddress}\`\n\n`;
+  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress}) *(${formatMarketCap(metadata.market_cap)} MC)*\n`;
+  message += `\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
   message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   
   message += formatSocials(metadata, dexSocials, tokenAddress);
-  message += formatDexUpdates(dexPay);
-  
-  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
-  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets);
-  
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
-
+    
     sortedTokens.forEach(token => {
       if (token.metadata.address !== tokenAddress) {
         const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
         message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
       }
     });
-
+    
     message += "\n";
   }
+  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets);
+  
+  message += formatDexUpdates(dexPay);
 
   return message + "\n";
 }
