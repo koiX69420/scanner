@@ -640,7 +640,13 @@ const COOLDOWN_TIME = 5000; // 5 seconds in milliseconds
 
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
+  const text = msg.text?.trim();
   const now = Date.now();
+
+  // Validate if the message contains a Solana address
+  if (!text || !SOLANA_ADDRESS_REGEX.test(text)) {
+    return; // Ignore messages that are not valid Solana addresses
+  }
 
   // Check if user is on cooldown
   if (userCooldowns.has(chatId)) {
