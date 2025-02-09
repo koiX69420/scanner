@@ -425,8 +425,8 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
       }
     });
     
-    message += "\n";
   }
+  message += "\n";
   const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
   message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets);
   
