@@ -279,196 +279,113 @@ function formatMarketCap(value) {
 function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
 
-  let alertEmojiCount = 0; // Counter for alert emojis
-
-  holdersData.slice(0, 20).forEach(holder => {
-    const cluster = clusterPercentages.find(cluster => cluster.recipients.includes(holder.Address));
-    if (
-      cluster ||
-      holder["Transaction Count"] < 10 ||
-      holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0 ||
-      parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
-      (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)
-    ) {
-      alertEmojiCount++;
-    }
-  });
-
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, holdersData.slice(0, 20), clusterPercentages);
-
+  const top20Data = holdersData.slice(0, 20);
+  const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
+  
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
-  // **Only include Top 20 holders for the detailed report**
+  
   if (!isSummary) {
-    message += generateTop20Holders(holdersData.slice(0, 20), clusterPercentages);
-  }
-
-
-  // **Only include Tooltip in the detailed report**
-  if (!isSummary) {
+    message += generateTop20Holders(top20Data, clusterPercentages);
     message += generateTooltip();
   }
-
+  
   return message;
 }
 
-// Generates the common message structure
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
-  const firstMintDate = formatTimestamp(metadata.created_time || metadata.first_mint_time);
+function countSuspiciousWallets(holderData, clusterPercentages) {
+  return holderData.reduce((count, holder) => {
+    return count + (isSuspicious(holder, clusterPercentages) ? 1 : 0);
+  }, 0);
+}
 
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
-  message += `\`${tokenAddress}\`\n\n`;
-  message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
-  message += `📅 On ${firstMintDate}\n`;
-  message += `🗣️ `
-  // Extract socials from metadata
-  // Extract socials from metadata
-  const socials = {
+function isSuspicious(holder, clusterPercentages) {
+  const inCluster = clusterPercentages.some(cluster => cluster.recipients.includes(holder.Address));
+  return (
+    inCluster ||
+    holder["Transaction Count"] < 10 ||
+    (holder["Total Buys"] === 0 && parseFloat(holder["Current Holding (%)"]) > 0) ||
+    parseFloat(holder["Total Sold (%)"]) > parseFloat(holder["Total Bought (%)"]) ||
+    (parseFloat(holder["Total Bought (%)"]) !== parseFloat(holder["Current Holding (%)"]) && holder["Total Sells"] === 0)
+  );
+}
+
+function analyzeWallets(top20Data, clusterPercentages) {
+  let sellingWallets = 0, zeroBuyWallets = 0;
+  let freshWallets = new Set(), bundledWallets = new Set();
+  
+  top20Data.forEach(holder => {
+    if (parseFloat(holder["Total Sold (%)"]) > 0) sellingWallets++;
+    if (holder["Total Buys"] === 0) zeroBuyWallets++;
+    if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
+  });
+
+  clusterPercentages.forEach(cluster => {
+    cluster.recipients.forEach(recipient => {
+      if (top20Data.some(holder => holder.Address === recipient) && !bundledWallets.has(recipient)) {
+        bundledWallets.add(recipient);
+      }
+    });
+  });
+  
+  const bundledFreshWallets = [...bundledWallets].filter(wallet => freshWallets.has(wallet)).length;
+  const freshNotBundled = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
+  
+  return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled };
+}
+function formatDexUpdates(dexPay) {
+  if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
+  let message = `🦅 *Dexscreener Updates*\n`;
+  dexPay.forEach(order => {
+    message += `  • ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}\n`;
+  });
+  return message + "\n";
+}
+
+function formatSocials(metadata, dexSocials, tokenAddress) {
+  const socials = extractSocialLinks(metadata, dexSocials);
+  return `🗣️ ` + Object.values(socials).filter(Boolean).join(" | ") + ` | [Dex](https://dexscreener.com/solana/${tokenAddress})\n\n`;
+}
+
+function extractSocialLinks(metadata, dexSocials) {
+  let socials = {
     website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
     twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
     telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
   };
-
-  let isBonded = false;
-  let raydiumSocialsExtracted = false;
-
-  // Extract socials from dexSocials if available
-  if (Array.isArray(dexSocials)) {
-    dexSocials.forEach(pool => {
-      // If dexId is not "pumpfun", mark as bonded
-      if (pool.dexId !== "pumpfun") {
-        isBonded = true;
-      }
-
-      // Process Raydium pool if not already processed
-      if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
-        // Extract website and socials from Raydium
-        if (Array.isArray(pool.websites)) {
-          pool.websites.forEach(website => {
-            if (website && typeof website.url === "string") {
-              socials.website = `[Web](${website.url})`;
-            }
-          });
-        }
-
-        if (Array.isArray(pool.socials)) {
-          pool.socials.forEach(({ type, url }) => {
-            if (type && url) {
-              const lowerPlatform = type.toLowerCase();
-              if (lowerPlatform === "twitter" && !socials.twitter) {
-                socials.twitter = `[𝕏](${url})`;
-              }
-              if (lowerPlatform === "telegram" && !socials.telegram) {
-                socials.telegram = `[TG](${url})`;
-              }
-            }
-          });
-        }
-
-        // Mark Raydium socials as extracted
-        raydiumSocialsExtracted = true;
-      } else if (raydiumSocialsExtracted) {
-        // Extract socials from other pools after Raydium has been processed
-        if (Array.isArray(pool.websites)) {
-          pool.websites.forEach(website => {
-            if (website && typeof website.url === "string") {
-              socials.website = socials.website || `[Web](${website.url})`;
-            }
-          });
-        }
-
-        if (Array.isArray(pool.socials)) {
-          pool.socials.forEach(({ type, url }) => {
-            if (type && url) {
-              const lowerPlatform = type.toLowerCase();
-              if (lowerPlatform === "twitter" && !socials.twitter) {
-                socials.twitter = `[𝕏](${url})`;
-              }
-              if (lowerPlatform === "telegram" && !socials.telegram) {
-                socials.telegram = `[TG](${url})`;
-              }
-            }
-          });
-        }
+  dexSocials.forEach(pool => {
+    pool.socials?.forEach(({ type, url }) => {
+      if (type && url) {
+        const lowerPlatform = type.toLowerCase();
+        if (lowerPlatform === "twitter") socials.twitter = `[𝕏](${url})`;
+        if (lowerPlatform === "telegram") socials.telegram = `[TG](${url})`;
       }
     });
-  }
-
-
-  // Add available social links
-  message += Object.values(socials).filter(Boolean).join(" | ") + " | ";
-  message += `[Dex](https://dexscreener.com/solana/${tokenAddress})`;
-  message += "\n"; // Add spacing before the next section
-  message += isBonded ? "🪢 Bonded\n\n" : "\n";
-
-  const statusEmojis = {
-    approved: "✅",
-    processing: "⏳",
-    unreceived: "❌"
-  };
-
-  if (dexPay.length > 0) {
-    message += `🦅 *Dexscreener Updates*\n`;
-
-    dexPay.forEach(order => {
-      const paymentTime = formatTimestamp(order.paymentTimestamp)
-      const emoji = statusEmojis[order.status] || "❓";
-
-      message += `  • ${order.type}: ${emoji} on ${paymentTime}\n`;
-    });
-
-    message += "\n"; // Add spacing after listing orders
-  } else {
-    message += `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
-  }
-
-  let sellingWallets = 0
-  let zeroBuyWallets = 0
-  let numberOfBundledWalletsInTop20 = 0;
-  let numberOfBundlesFreshWalletsInTop20 = 0;
-  let numberOfFreshNotBundledWalletsInTop20 = 0;
-
-  let freshWallets = new Set(); // Set to store fresh wallets
-  let bundledWallets = new Set(); // Set to store unique bundled wallets
-
-  // Step 1: Identify fresh wallets in the top 20
-  top20Data.forEach((holder) => {
-    if (parseFloat(holder["Total Sold (%)"]) > 0) sellingWallets += 1;
-    if (holder["Total Buys"] === 0) zeroBuyWallets += 1;
-
-    // If wallet has less than 10 transactions, it's fresh
-    if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
   });
+  return socials;
+}
 
-
-// Step 2: Find bundled wallets in the top 20
-clusterPercentages.forEach((cluster) => {
-  cluster.recipients.forEach(recipient => {
-    // Check if recipient is in the top 20 holders
-    const isTop20 = top20Data.some(holder => holder.Address === recipient);
-    
-    if (isTop20 && !bundledWallets.has(recipient)) { 
-      bundledWallets.add(recipient);
-      numberOfBundledWalletsInTop20++; // ✅ Only count ONCE per wallet
-
-      // Check if it's a fresh wallet
-      if (freshWallets.has(recipient)) {
-        numberOfBundlesFreshWalletsInTop20++;
-      }
-    }
-  });
-});
-
-  // Step 3: Count fresh wallets that are NOT bundled
-  numberOfFreshNotBundledWalletsInTop20 = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
-  message+=`*📊 Top 20 Holder Summary*\n`
-  message += `    ⚠️ \t*${alertEmojiCount}* Sus Wallet${alertEmojiCount === 1 ? '' : 's'}\n`;
-  message += `    🧩 \t*${numberOfBundledWalletsInTop20}* Bundled Wallets\n`;
-  message += `    🆕 \t*${numberOfBundlesFreshWalletsInTop20}* Bundled Fresh Wallets\n`;
-  message += `    🌿 \t*${numberOfFreshNotBundledWalletsInTop20}* Fresh Wallets (Not Bundled): \n`;
-  message += `    ❌ \t*${zeroBuyWallets}* No Purchase Transactions\n`;
-  message += `    🔴 \t*${sellingWallets}* Selling Wallets\n\n`;
-
-
+function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling) {
+  return `*📊 Top 20 Holder Summary*\n`
+    + `    ⚠️ \t*${alertCount}* Sus Wallet${alertCount === 1 ? '' : 's'}\n`
+    + `    🧩 \t*${bundled}* Bundled Wallets\n`
+    + `    🆕 \t*${freshBundled}* Bundled Fresh Wallets\n`
+    + `    🌿 \t*${freshNotBundled}* Fresh Wallets (Not Bundled)\n`
+    + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
+    + `    🔴 \t*${selling}* Selling Wallets\n\n`;
+}
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
+  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  message += `\`${tokenAddress}\`\n\n`;
+  message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
+  message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
+  
+  message += formatSocials(metadata, dexSocials, tokenAddress);
+  message += formatDexUpdates(dexPay);
+  
+  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets);
+  
   message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
   if (tokenHistory.length > 1) {
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
