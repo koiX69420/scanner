@@ -187,7 +187,6 @@ async function fetchDexPay(tokenAddress) {
 }
 
 
-"BX5AntN3EvDFNeZiNzMtyoHtoNqX7smZ3DErEkzpump"
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
     console.log(`Calculating cluster percentages...`);
@@ -198,12 +197,12 @@ async function calculateClusterPercentages(holderData, fundingMap) {
     }, {});
 
     const clusterPercentages = [];
-
+    const ignoreAddresses = ["BmrLoL9jzYo4yiPUsFhYFU8hgE3CD3Npt8tgbqvneMyB"]
     // Iterate through the fundingMap entries
     for (const [sender, recipients] of Object.entries(fundingMap)) {
       // Skip if there are 1 or fewer recipients
       if (recipients.size <= 1) continue;
-
+      if(ignoreAddresses.includes(sender)) continue;
       let totalHoldings = 0;
 
       // Iterate through each recipient and calculate the total holdings
@@ -413,7 +412,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   
   // Guard against undefined metadata.creator
   if (metadata.creator) {
-    message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
+    message += `🛠️ Deployer: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/account/${metadata.creator})\`${metadata.creator}\`\n`;
   }
   
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
