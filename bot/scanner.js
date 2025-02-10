@@ -47,12 +47,13 @@ async function fetchDexSocials(pools) {
     // Fetch data for all pool IDs in parallel
     const dexSocials = await Promise.all(
       pools.map(async (pool) => {
+        console.log(pool)
         const pairId = pool.pool_id;
         const { token_1, token_2 } = pool;
 
         // Check if either the base or quote token is Solana (SOL)
         if (token_1 !== 'So11111111111111111111111111111111111111112' && token_2 !== 'So11111111111111111111111111111111111111112') {
-          return { pool_id: pairId, socials: [], websites: [] };
+          return { pool_id: "N/A", socials: [], websites: [] };
         }
 
         const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
@@ -62,10 +63,10 @@ async function fetchDexSocials(pools) {
           if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
           const result = await response.json();
-
+          console.log(result)
           // Get the first valid pair from the response
           const pairData = result.pair;
-          if (!pairData) return { pool_id: pairId, socials: [], websites: [] };
+          if (!pairData) return { pool_id: "N/A", socials: [], websites: [] };
 
           const dexId = pairData.dexId; // Extract dexId
 
@@ -186,7 +187,7 @@ async function fetchDexPay(tokenAddress) {
 }
 
 
-
+"BX5AntN3EvDFNeZiNzMtyoHtoNqX7smZ3DErEkzpump"
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
     console.log(`Calculating cluster percentages...`);
@@ -341,6 +342,8 @@ function formatSocials(metadata, dexSocials, tokenAddress) {
 }
 
 function extractSocialLinks(metadata, dexSocials) {
+  console.log(metadata)
+  console.log(dexSocials)
   let socials = {
     website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
     twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
@@ -354,7 +357,7 @@ function extractSocialLinks(metadata, dexSocials) {
   if (Array.isArray(dexSocials)) {
     dexSocials.forEach(pool => {
       // If dexId is not "pumpfun", mark as bonded
-      if (pool.dexId !== "pumpfun") {
+      if (pool.dexId !== "pumpfun" && pool.dexId) {
         isBonded = true;
       }
 
