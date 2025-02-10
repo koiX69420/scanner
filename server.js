@@ -23,6 +23,11 @@ app.post("/api/token-message", async (req, res) => {
   res.json(response);
 });
 
+// Serve privacy policy page
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'public', 'privacy.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend','public', 'index.html'));
 });
