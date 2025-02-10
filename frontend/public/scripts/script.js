@@ -18,7 +18,7 @@ async function fetchTokenData() {
     resultDiv.innerHTML = "⏳ Fetching data...";
 
     try {
-        const response = await fetch("http://localhost:5000/api/token-message", {
+        const response = await fetch("/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tokenAddress, isSummary: true })
