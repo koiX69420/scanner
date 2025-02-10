@@ -482,3 +482,7 @@ async function processCallbackQuery(chatId, query) {
     }
   }
 }
+
+module.exports = {
+  generateTokenMessage
+};
