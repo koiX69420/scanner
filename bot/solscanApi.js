@@ -209,7 +209,6 @@ async function fetchTransactionsForBatch(holderAddresses) {
 
 // Export the functions and api call count
 module.exports = {
-  fetchTopHolders,
   fetchDefiActivities,
   fetchTokenMetadata,
   fetchTokenMarkets,

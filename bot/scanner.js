@@ -6,12 +6,11 @@ const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 60
 const MAX_API_CALLS_PER_MINUTE = 1000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
-const API_CALLS_PER_REQUEST = MAX_HOLDERS * 2 + 30;
+const API_CALLS_PER_REQUEST = MAX_HOLDERS * 3 + 30;
 const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
 
 let availableApiCalls = MAX_API_CALLS_PER_MINUTE; // Start with full quota
 const {
-  fetchTopHolders,
   fetchDefiActivities,
   fetchTokenMetadata,
   fetchTokenMarkets,
