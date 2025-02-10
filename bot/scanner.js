@@ -25,24 +25,18 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
   const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
   if (!holders.length) return [];
 
-  // Concurrently fetch Defi activities for all holders
-  const defiPromises = holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress));
-  const defiResults = await Promise.all(defiPromises);
+  const defiResults = await Promise.all(holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress)));
 
-  // Map over holders and defi results to merge the data
-  return holders.map((holder, index) => {
-    const { buys, sells, totalBought, totalSold, transactionCount } = defiResults[index];
-    return {
-      Rank: holder.rank,
-      Address: holder.owner,
-      "Current Holding (%)": ((holder.amount / supply) * 100).toFixed(2),
-      "Total Buys": buys,
-      "Total Sells": sells,
-      "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
-      "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-      "Transaction Count": transactionCount
-    };
-  });
+  // Directly map defiResults to the final return format
+  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount }, index) => ({
+    Address: walletAddress,
+    "Current Holding (%)": ((holders[index].amount / supply) * 100).toFixed(2),
+    "Total Buys": buys,
+    "Total Sells": sells,
+    "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
+    "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
+    "Transaction Count": transactionCount
+  }));
 }
 
 
@@ -196,7 +190,6 @@ async function fetchDexPay(tokenAddress) {
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
     console.log(`Calculating cluster percentages...`);
-
     // Create a lookup map for holderData based on Address for fast access
     const holderDataMap = holderData.reduce((map, item) => {
       map[item.Address] = item;
@@ -278,13 +271,11 @@ function formatMarketCap(value) {
 }
 function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
-
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
   
   let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
-  
   if (!isSummary) {
     message += generateTop20Holders(top20Data, clusterPercentages);
     message += generateTooltip();
@@ -408,23 +399,39 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress}) *(${formatMarketCap(metadata.market_cap)} MC)*\n`;
-  message += `\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
-  message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
-  message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
+  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})`;
+  if (metadata.market_cap) {
+    message += ` *(${formatMarketCap(metadata.market_cap)} MC)*`;
+  }
+  message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
   
+  // Guard against undefined metadata.creator
+  if (metadata.creator) {
+    message += `🛠️ Token created by: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/token/${tokenAddress})\n`;
+  }
+  
+  message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   message += formatSocials(metadata, dexSocials, tokenAddress);
-  message += `🏷️ *Previous Tokens Created: ${tokenHistory.length - 1}*\n`;
-  if (tokenHistory.length > 1) {
+  
+  // Guard against undefined tokenHistory
+  message += `🏷️ *Previous Tokens Created: *`;
+
+  if (tokenHistory && tokenHistory.length > 1) {
+    message += `${tokenHistory.length - 1}\n`;
+  
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
     
     sortedTokens.forEach(token => {
-      if (token.metadata.address !== tokenAddress) {
+      if (token.metadata?.address && token.metadata.address !== tokenAddress) {
         const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
         message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
       }
     });
-    
+  
+    message += "\n";
+  }else{
+    message += "0\n";
+
   }
   message += "\n";
   const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
@@ -474,6 +481,7 @@ function generateTop20Holders(holdersData, clusterPercentages) {
 
 // Generates the Cluster Analysis section
 function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
+
   const totalBundleHoldings = clusterPercentages.reduce(
     (sum, cluster) => sum + parseFloat(cluster.totalHoldings || 0),
     0
@@ -536,7 +544,6 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, 40);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));

@@ -12,7 +12,7 @@ async function makeApiCall(url) {
 
     if (!response.ok) {
       const responseText = await response.text();
-      console.error(`❌ Failed to fetch data. Status: ${response.status} Response: ${responseText}`);
+      console.error(`❌ Failed to fetch data. Status: ${response.status} Response: ${responseText} ${url}`);
       return null; // Return null if the call fails
     }
 
@@ -82,7 +82,7 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
       }
     });
   });
-  return { buys, sells, totalBought, totalSold,transactionCount };
+  return { walletAddress,buys, sells, totalBought, totalSold,transactionCount };
 }
 
 // Function to fetch token metadata
@@ -106,6 +106,9 @@ async function fetchTokenMarkets(tokenAddress) {
 
 // Function to fetch token creation history for a wallet address
 async function fetchTokenCreationHistory(walletAddress) {
+  if(!walletAddress){
+    return []
+  }
   const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_SPL_INIT_MINT&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
   const activities = await makeApiCall(url) || [];
 
@@ -120,7 +123,6 @@ async function fetchTokenCreationHistory(walletAddress) {
         });
     })
   );
-
   return tokensCreated.filter(Boolean); // Remove undefined/null values
 }
 
