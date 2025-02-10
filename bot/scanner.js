@@ -150,7 +150,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
     devHolds = `(Bought: ${(parseFloat(devActivities.totalBought / metadata.supply)* 100).toFixed(2)}%/\u200B${(parseFloat(devActivities.totalSold / metadata.supply)* 100).toFixed(2)}% Sold)`
   }
   if (metadata.creator) {
-    message += `🛠️ *Deployer* ${devHolds}:\n[${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/account/${metadata.creator})\`${metadata.creator}\`\n`;
+    message += `🛠️ *Deployer* ${devHolds}:\n\`${metadata.creator}\`\n`;
   }
   console.log(devActivities)
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
