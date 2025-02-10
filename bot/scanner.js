@@ -305,13 +305,16 @@ function isSuspicious(holder, clusterPercentages) {
 function analyzeWallets(top20Data, clusterPercentages) {
   let sellingWallets = 0, zeroBuyWallets = 0;
   let freshWallets = new Set(), bundledWallets = new Set();
-  
+  let holdingAmount = 0
   top20Data.forEach(holder => {
+    holdingAmount+=parseFloat(holder["Current Holding (%)"]);
     if (parseFloat(holder["Total Sold (%)"]) > 0) sellingWallets++;
     if (holder["Total Buys"] === 0) zeroBuyWallets++;
     if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
   });
-
+  if(holdingAmount>=100){
+    holdingAmount=100
+  }
   clusterPercentages.forEach(cluster => {
     cluster.recipients.forEach(recipient => {
       if (top20Data.some(holder => holder.Address === recipient) && !bundledWallets.has(recipient)) {
@@ -323,7 +326,7 @@ function analyzeWallets(top20Data, clusterPercentages) {
   const bundledFreshWallets = [...bundledWallets].filter(wallet => freshWallets.has(wallet)).length;
   const freshNotBundled = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
   
-  return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled };
+  return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled,holdingAmount };
 }
 function formatDexUpdates(dexPay) {
   if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
@@ -392,8 +395,8 @@ function extractSocialLinks(metadata, dexSocials) {
   return {socials,isBonded};
 }
 
-function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling) {
-  return `*📊 Top 20 Holder Summary*\n`
+function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {
+  return `*📊 Top 20 Holder Summary (${holdingAmount.toFixed(2)}%)*\n`
     + `    ⚠️ \t*${alertCount}* Sus Wallet${alertCount === 1 ? '' : 's'}\n`
     + `    🧩 \t*${bundled}* Bundled Wallets\n`
     + `    🆕 \t*${freshBundled}* Bundled Fresh Wallets\n`
@@ -437,8 +440,8 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 
   }
   message += "\n";
-  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled } = analyzeWallets(top20Data, clusterPercentages);
-  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets);
+  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled,holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets,holdingAmount);
   
   message += formatDexUpdates(dexPay);
 
