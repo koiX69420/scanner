@@ -16,257 +16,24 @@ const {
   fetchTokenMetadata,
   fetchTokenMarkets,
   fetchTokenCreationHistory,
-  fetchSolTransfers,
-  getApiCallCount
+  getApiCallCount,
+  getTokenHolderData,
+  getFundingMap
 } = require('./solscanApi');
-// Refactored main function to fetch all token holder data and related activities concurrently
-async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
-  console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
-  const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
-  if (!holders.length) return [];
 
-  const defiResults = await Promise.all(holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress)));
+const {
+  fetchDexPay,
+  fetchDexSocials
+} = require('./dexScreenerApi');
 
-  // Directly map defiResults to the final return format
-  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount }, index) => ({
-    Address: walletAddress,
-    "Current Holding (%)": ((holders[index].amount / supply) * 100).toFixed(2),
-    "Total Buys": buys,
-    "Total Sells": sells,
-    "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
-    "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-    "Transaction Count": transactionCount
-  }));
-}
-
-
-async function fetchDexSocials(pools) {
-  try {
-    const chainId = "solana"; // Set the chain ID if it's constant
-
-    // Fetch data for all pool IDs in parallel
-    const dexSocials = await Promise.all(
-      pools.map(async (pool) => {
-        const pairId = pool.pool_id;
-        const { token_1, token_2 } = pool;
-
-        // Check if either the base or quote token is Solana (SOL)
-        if (token_1 !== 'So11111111111111111111111111111111111111112' && token_2 !== 'So11111111111111111111111111111111111111112') {
-          return { pool_id: "N/A", socials: [], websites: [] };
-        }
-
-        const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
-
-        try {
-          const response = await fetch(url, { method: "GET" });
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-          const result = await response.json();
-          // Get the first valid pair from the response
-          const pairData = result.pair;
-          if (!pairData) return { pool_id: "N/A", socials: [], websites: [] };
-
-          const dexId = pairData.dexId; // Extract dexId
-
-          const socials = (pairData.info?.socials || [])
-            .map(social => ({
-              type: social.type.toLowerCase(),
-              url: social.url
-            }));
-
-          const websites = (pairData.info?.websites || [])
-            .map(website => ({
-              label: website.label.toLowerCase(),
-              url: website.url
-            }));
-
-          return { pool_id: pairId, socials, websites, dexId };
-        } catch (error) {
-          console.error(`⚠️ Error fetching data for pair ${pairId}:`, error.message);
-          return { pool_id: pairId, socials: [], websites: [] };
-        }
-      })
-    );
-
-    return dexSocials;
-  } catch (error) {
-    console.error("❌ Error fetching Dexscreener socials:", error.message);
-    return [];
-  }
-}
-async function getFundingMap(topHolders) {
-  const fundingMap = {}; // Map to group funding wallets for clustering
-
-  const batchSize = 10; // Adjust based on API limits and network conditions
-  const batches = [];
-
-  // Split topHolders into batches for better concurrency
-  for (let i = 0; i < topHolders.length; i += batchSize) {
-    batches.push(topHolders.slice(i, i + batchSize));
-  }
-
-  // Fetch transactions for each batch of holders concurrently
-  const fetchPromises = batches.map(batch => {
-    const holderAddresses = batch.map(holder => holder.Address);
-    return fetchTransactionsForBatch(holderAddresses);
-  });
-
-  // Wait for all batches to be fetched
-  const allSolTransactions = await Promise.all(fetchPromises);
-
-  // Iterate over the fetched transactions and populate the funding map
-  allSolTransactions.forEach((batchTransactions, batchIndex) => {
-    const batchHolders = batches[batchIndex]; // Get holders for the current batch
-
-    batchTransactions.forEach((solTransactions, holderIndex) => {
-      const holder = batchHolders[holderIndex].Address;
-
-      // Iterate through transactions and populate the funding map
-      solTransactions.forEach(transaction => {
-        const recipient = transaction.to_address;
-        const sender = transaction.from_address;
-
-        // If the recipient is the current holder, add sender to funding map
-        if (recipient === holder) {
-          if (!fundingMap[sender]) {
-            fundingMap[sender] = new Set();
-          }
-          fundingMap[sender].add(holder); // Add holder to sender's list
-        }
-      });
-    });
-  });
-
-  return fundingMap;
-}
-// Fetch transactions for a batch of holders
-async function fetchTransactionsForBatch(holderAddresses) {
-  // Create a batch of promises for fetching transactions
-  const fetchPromises = holderAddresses.map(walletAddress => fetchSolTransfers(walletAddress));
-
-  // Wait for all transactions to be fetched concurrently for the batch
-  return await Promise.all(fetchPromises);
-}
+const {
+  calculateClusterPercentages,
+  formatMarketCap,
+  formatTimestamp
+} = require('./util');
 
 
 
-async function fetchDexPay(tokenAddress) {
-  const url = `https://api.dexscreener.com/orders/v1/solana/${tokenAddress}`;
-
-  try {
-    const response = await fetch(url, { method: 'GET', headers: {} });
-
-    // Check for valid response status
-    if (!response.ok) {
-      console.error(`❌ Error fetching data for ${tokenAddress}: Status ${response.status}`);
-      return {
-        type: "tokenProfile",
-        status: "unreceived",
-        paymentTimestamp: 0
-      };
-    }
-
-    const data = await response.json();
-
-    // Return data if found; otherwise, return default value
-    return data.length > 0 ? data : {
-      type: "tokenProfile",
-      status: "unreceived",
-      paymentTimestamp: 0
-    };
-  } catch (error) {
-    console.error(`❌ Error fetching dex pay for ${tokenAddress}:`, error.message);
-    return {
-      type: "tokenProfile",
-      status: "unreceived",
-      paymentTimestamp: 0
-    };
-  }
-}
-
-
-async function calculateClusterPercentages(holderData, fundingMap) {
-  try {
-    console.log(`Calculating cluster percentages...`);
-    // Create a lookup map for holderData based on Address for fast access
-    const holderDataMap = holderData.reduce((map, item) => {
-      map[item.Address] = item;
-      return map;
-    }, {});
-
-    const clusterPercentages = [];
-    const ignoreAddresses = ["BmrLoL9jzYo4yiPUsFhYFU8hgE3CD3Npt8tgbqvneMyB"]
-    // Iterate through the fundingMap entries
-    for (const [sender, recipients] of Object.entries(fundingMap)) {
-      // Skip if there are 1 or fewer recipients
-      if (recipients.size <= 1) continue;
-      if(ignoreAddresses.includes(sender)) continue;
-      let totalHoldings = 0;
-
-      // Iterate through each recipient and calculate the total holdings
-      recipients.forEach((recipient) => {
-        const data = holderDataMap[recipient]; // Fast lookup
-        if (data) {
-          totalHoldings += parseFloat(data["Current Holding (%)"]); // Add recipient's holding percentage
-        }
-      });
-
-      // Push the cluster data to the result if totalHoldings is greater than zero
-      if (totalHoldings > 0) {
-        clusterPercentages.push({
-          sender,
-          recipients: [...recipients],
-          totalHoldings: totalHoldings
-        });
-      }
-    }
-
-    // Sort clusters by total holdings percentage (descending)
-    clusterPercentages.sort((a, b) => b.totalHoldings - a.totalHoldings);
-
-    return clusterPercentages;
-  } catch (error) {
-    console.error("Error calculating cluster percentages:", error);
-    return [];
-  }
-}
-
-function formatTimestamp(timestamp) {
-
-  if (!timestamp || isNaN(timestamp)) return "❌ Invalid Time"; // Handle bad data
-
-  let correctedTimestamp;
-
-  if (timestamp < 1e12) {
-    // Seconds (10-digit)
-    correctedTimestamp = timestamp * 1000;
-  } else if (timestamp < 1e15) {
-    // Milliseconds (13-digit)
-    correctedTimestamp = timestamp;
-  } else if (timestamp < 1e18) {
-    // Microseconds (16-digit) → Convert to milliseconds
-    correctedTimestamp = Math.floor(timestamp / 1e3);
-  } else {
-    // Nanoseconds (19-digit) → Convert to milliseconds
-    correctedTimestamp = Math.floor(timestamp / 1e6);
-  }
-
-  const date = new Date(correctedTimestamp);
-  return date.toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-function formatMarketCap(value) {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`; // Billions
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`; // Millions
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
-  return value.toFixed(2); // Less than 1,000
-}
 function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devActivities, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
@@ -283,9 +50,7 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
 }
 
 function countSuspiciousWallets(holderData, clusterPercentages) {
-  return holderData.reduce((count, holder) => {
-    return count + (isSuspicious(holder, clusterPercentages) ? 1 : 0);
-  }, 0);
+  return holderData.reduce((count, holder) => count + (isSuspicious(holder, clusterPercentages) ? 1 : 0), 0);
 }
 
 function isSuspicious(holder, clusterPercentages) {
@@ -309,9 +74,7 @@ function analyzeWallets(top20Data, clusterPercentages) {
     if (holder["Total Buys"] === 0) zeroBuyWallets++;
     if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
   });
-  if(holdingAmount>=100){
-    holdingAmount=100
-  }
+  holdingAmount = Math.min(holdingAmount, 100);
   clusterPercentages.forEach(cluster => {
     cluster.recipients.forEach(recipient => {
       if (top20Data.some(holder => holder.Address === recipient) && !bundledWallets.has(recipient)) {
@@ -327,67 +90,43 @@ function analyzeWallets(top20Data, clusterPercentages) {
 }
 function formatDexUpdates(dexPay) {
   if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
-  let message = `🦅 *Dexscreener Updates*\n`;
-  dexPay.forEach(order => {
-    message += `  • ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}\n`;
-  });
-  return message + "\n";
+  
+  return `🦅 *Dexscreener Updates*\n` + dexPay.map(order => `  • ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`).join("\n") + "\n";
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
-  const {socials,isBonded} = extractSocialLinks(metadata, dexSocials);
-  let message =  `🗣️ ` + Object.values(socials).filter(Boolean).join(" | ") + ` | [Dex](https://dexscreener.com/solana/${tokenAddress})\n`;
-  message += isBonded ? "🪢 Bonded\n\n" : "\n";
-  return message
+  const { socials, isBonded } = extractSocialLinks(metadata, dexSocials);
+  return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` + (isBonded ? "🪢 Bonded\n\n" : "\n");
 }
 
 function extractSocialLinks(metadata, dexSocials) {
-  let socials = {
+  const socials = {
     website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
     twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
     telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
   };
 
-  let isBonded = false;
+  let isBonded = dexSocials.some(pool => pool.dexId !== "pumpfun" && pool.dexId);
   let raydiumSocialsExtracted = false;
 
-  // Extract socials from dexSocials if available
-  if (Array.isArray(dexSocials)) {
-    dexSocials.forEach(pool => {
-      // If dexId is not "pumpfun", mark as bonded
-      if (pool.dexId !== "pumpfun" && pool.dexId) {
-        isBonded = true;
-      }
+  dexSocials.forEach(pool => {
+    if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
+      pool.websites?.forEach(website => {
+        if (website?.url) socials.website = `[Web](${website.url})`;
+      });
 
-      // Process Raydium pool if not already processed
-      if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
-        // Extract website and socials from Raydium
-        if (Array.isArray(pool.websites)) {
-          pool.websites.forEach(website => {
-            if (website && typeof website.url === "string") {
-              socials.website = `[Web](${website.url})`;
-            }
-          });
+      pool.socials?.forEach(({ type, url }) => {
+        if (type && url) {
+          const lowerPlatform = type.toLowerCase();
+          if (lowerPlatform === "twitter" && !socials.twitter) socials.twitter = `[𝕏](${url})`;
+          if (lowerPlatform === "telegram" && !socials.telegram) socials.telegram = `[TG](${url})`;
         }
+      });
+      raydiumSocialsExtracted = true;
+    }
+  });
 
-        if (Array.isArray(pool.socials)) {
-          pool.socials.forEach(({ type, url }) => {
-            if (type && url) {
-              const lowerPlatform = type.toLowerCase();
-              if (lowerPlatform === "twitter" && !socials.twitter) {
-                socials.twitter = `[𝕏](${url})`;
-              }
-              if (lowerPlatform === "telegram" && !socials.telegram) {
-                socials.telegram = `[TG](${url})`;
-              }
-            }
-          });
-        }
-        raydiumSocialsExtracted=true;
-      }
-    });
-  }
-  return {socials,isBonded};
+  return { socials, isBonded };
 }
 
 function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {

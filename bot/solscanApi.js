@@ -133,6 +133,80 @@ function getApiCallCount() {
   return temp;
 }
 
+// Refactored main function to fetch all token holder data and related activities concurrently
+async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
+  console.log(`🔄 Fetching token holder data for: ${tokenAddress}`);
+  const holders = await fetchTopHolders(tokenAddress, maxHolders, pageSize);
+  if (!holders.length) return [];
+
+  const defiResults = await Promise.all(holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress)));
+
+  // Directly map defiResults to the final return format
+  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount }, index) => ({
+    Address: walletAddress,
+    "Current Holding (%)": ((holders[index].amount / supply) * 100).toFixed(2),
+    "Total Buys": buys,
+    "Total Sells": sells,
+    "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
+    "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
+    "Transaction Count": transactionCount
+  }));
+}
+
+async function getFundingMap(topHolders) {
+  const fundingMap = {}; // Map to group funding wallets for clustering
+
+  const batchSize = 10; // Adjust based on API limits and network conditions
+  const batches = [];
+
+  // Split topHolders into batches for better concurrency
+  for (let i = 0; i < topHolders.length; i += batchSize) {
+    batches.push(topHolders.slice(i, i + batchSize));
+  }
+
+  // Fetch transactions for each batch of holders concurrently
+  const fetchPromises = batches.map(batch => {
+    const holderAddresses = batch.map(holder => holder.Address);
+    return fetchTransactionsForBatch(holderAddresses);
+  });
+
+  // Wait for all batches to be fetched
+  const allSolTransactions = await Promise.all(fetchPromises);
+
+  // Iterate over the fetched transactions and populate the funding map
+  allSolTransactions.forEach((batchTransactions, batchIndex) => {
+    const batchHolders = batches[batchIndex]; // Get holders for the current batch
+
+    batchTransactions.forEach((solTransactions, holderIndex) => {
+      const holder = batchHolders[holderIndex].Address;
+
+      // Iterate through transactions and populate the funding map
+      solTransactions.forEach(transaction => {
+        const recipient = transaction.to_address;
+        const sender = transaction.from_address;
+
+        // If the recipient is the current holder, add sender to funding map
+        if (recipient === holder) {
+          if (!fundingMap[sender]) {
+            fundingMap[sender] = new Set();
+          }
+          fundingMap[sender].add(holder); // Add holder to sender's list
+        }
+      });
+    });
+  });
+
+  return fundingMap;
+}
+// Fetch transactions for a batch of holders
+async function fetchTransactionsForBatch(holderAddresses) {
+  // Create a batch of promises for fetching transactions
+  const fetchPromises = holderAddresses.map(walletAddress => fetchSolTransfers(walletAddress));
+
+  // Wait for all transactions to be fetched concurrently for the batch
+  return await Promise.all(fetchPromises);
+}
+
 // Export the functions and api call count
 module.exports = {
   fetchTopHolders,
@@ -141,5 +215,7 @@ module.exports = {
   fetchTokenMarkets,
   fetchTokenCreationHistory,
   fetchSolTransfers,
-  getApiCallCount, // Export the API call counter
+  getApiCallCount,
+  getTokenHolderData,
+  getFundingMap
 };
