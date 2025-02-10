@@ -15,7 +15,7 @@ async function fetchTokenData() {
     resultDiv.innerHTML = "⏳ Fetching data...";
 
     try {
-        const response = await fetch("/api/token-message", {
+        const response = await fetch("https://mfscanner-07259bb7e8c0.herokuapp.com/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tokenAddress, isSummary: true })

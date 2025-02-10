@@ -1,8 +1,11 @@
 {
     "manifest_version": 3,
-    "name": "Solana Token Analyzer",
+    "name": "MandogMF Scanner",
     "version": "1.0",
-    "description": "Analyze Solana tokens instantly!",
+    "description": "Scan Solana tokens instantly!",
+    "author": {
+        "email": "anon21976@gmail.com"
+      },
     "host_permissions": [
         "*://*/*",
         "https://mfscanner-07259bb7e8c0.herokuapp.com/*"
@@ -10,7 +13,7 @@
     "action": {
       "default_popup": "index.html",
       "default_icon": {
-        "32": "MD.jpg"
+        "32": "128.png"
       }
     },
     "content_security_policy": {
