@@ -1,12 +1,13 @@
 {
     "manifest_version": 3,
-    "name": "MandogMF Scanner",
+    "name": "Mandog Trench Tools",
     "version": "1.0",
     "description": "Scan Solana tokens instantly!",
     "author": {
-        "email": "anon21976@gmail.com"
+        "email": "info@mandog.fun"
       },
     "host_permissions": [
+      "mandog.fun",
         "*://*/*"
         ], 
     "action": {
