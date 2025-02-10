@@ -7,8 +7,7 @@
         "email": "anon21976@gmail.com"
       },
     "host_permissions": [
-        "*://*/*",
-        "https://mfscanner-07259bb7e8c0.herokuapp.com/*"
+        "*://*/*"
         ], 
     "action": {
       "default_popup": "index.html",

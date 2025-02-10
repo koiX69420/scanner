@@ -1,6 +1,5 @@
-/* General Styles */
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Lucida Grande', sans-serif;
     background-color: #121212;
     color: #e0e0e0;
     margin: 0;
@@ -14,31 +13,43 @@ h2 {
     font-size: 18px;
     text-align: center;
 }
+/* Ensure both input and result have the same width */
+input, #result {
+    width: 100%;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
 
+/* Input & Button Inline Styling */
+#tokenAddress {
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #222;
+    color: #fff;
+    margin-right: 10px; /* Space between input and button */
+    width: calc(100% - 100px); /* Make the input take the remaining space */
+    display: inline-block; /* Allow input and button to be inline */
+}
+
+#scanButton {
+    padding: 10px 20px;
+    background-color: #03DAC6;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-block; /* Ensure button is inline */
+}
 /* Input & Button */
 input {
-    width: calc(100% - 50px);
     padding: 10px;
     border: 1px solid #444;
     border-radius: 5px;
     background-color: #222;
     color: #fff;
     margin-bottom: 10px;
-}
-
-button {
-    background-color: #03DAC6;
-    color: #121212;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 5px;
-    font-weight: bold;
-    margin-left: 5px;
-}
-
-button:hover {
-    background-color: #00c4b4;
+    width: 100%;
 }
 
 /* Results Styling */
@@ -80,24 +91,42 @@ br {
     margin-bottom: 5px;
 }
 
-/* Wallet Highlights */
-.wallet-warning {
-    color: #ff9800;
-    font-weight: bold;
+/* Glow animation when user presses Enter */
+.glow {
+    box-shadow: 0px 0px 10px rgba(0, 255, 0, 0.7);
+    transition: box-shadow 0.3s ease-in-out;
 }
 
-.wallet-sell {
-    color: #e53935;
+/* Shake effect when input is invalid */
+.shake {
+    animation: shake 0.3s ease-in-out;
 }
 
-.wallet-buy {
-    color: #4caf50;
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
 }
 
-/* Responsive Design */
-@media screen and (max-width: 400px) {
-    body {
-        width: auto;
-        padding: 10px;
-    }
+/* Smooth fade-in effect for results */
+#result {
+    transition: opacity 0.5s ease-in-out;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.rotate {
+    display: block; /* Ensure it's visible */
+    animation: spin 1s linear infinite;
+}
+
+/* Hide the icon initially */
+#loadingIcon {
+    width: 150px;
+    height: 150px;
 }

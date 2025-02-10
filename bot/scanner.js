@@ -271,12 +271,12 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 function generateTooltip() {
   let tooltip = "\n*Tooltip*\n";
   tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) \n\n`;
-  tooltip += "🔍 What is a Sus Wallet?\n";
-  tooltip += "⚠️ A wallet is flagged as suspicious if:\n";
-  tooltip += "  - It received tokens but has 0 buys.\n";
-  tooltip += "  - It has sold more tokens than it bought.\n";
-  tooltip += "  - It is part of a bundle.\n";
-  tooltip += "  - It has less than 10 defi swap transactions 🌿\n";
+  tooltip += "_🔍 What is a Sus Wallet?_\n";
+  tooltip += "⚠️ _A wallet is flagged as suspicious if:_\n";
+  tooltip += "  - _It received tokens but has 0 buys._\n";
+  tooltip += "  - _It has sold more tokens than it bought._\n";
+  tooltip += "  - _It is part of a bundle._\n";
+  tooltip += "  - _It has less than 10 defi swap transactions_ 🌿\n";
   return tooltip;
 }
 
