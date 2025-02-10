@@ -3,8 +3,10 @@
     "name": "Solana Token Analyzer",
     "version": "1.0",
     "description": "Analyze Solana tokens instantly!",
-    "permissions": ["storage"],
-    "host_permissions": ["*://*/*"], 
+    "host_permissions": [
+        "*://*/*",
+        "https://mfscanner-07259bb7e8c0.herokuapp.com/*"
+        ], 
     "action": {
       "default_popup": "index.html",
       "default_icon": {
