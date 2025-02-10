@@ -7,7 +7,7 @@
         "email": "info@mandog.fun"
       },
     "host_permissions": [
-      "mandog.fun",
+      "https://mandog.fun/",
         "*://*/*"
         ], 
     "action": {
