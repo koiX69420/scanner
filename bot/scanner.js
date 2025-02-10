@@ -239,15 +239,14 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
   const top5Clusters = clusterPercentages.slice(0, 3);
 
   top5Clusters.forEach((cluster, index) => {
+
     const senderData = holdersData.find(item => item.Address === cluster.sender);
-    const senderHolding = senderData ? senderData.holding : "N/A";
+    const senderHolding = senderData ? senderData.holding : "0.00";
+
 
     const totalClusterHoldings = (parseFloat(cluster.totalHoldings) + (parseFloat(senderHolding) || 0)).toFixed(2);
     message += `*#${index + 1}* Bundle Holdings: ${totalClusterHoldings}%\n`;
     message += `    🕵️‍♂️ Funding Wallet: [${cluster.sender.slice(0, 4)}...${cluster.sender.slice(-4)}](https://solscan.io/account/${cluster.sender})`;
-    if (senderHolding !== "N/A") {
-      message += ` - *${senderHolding}%*`;
-    }
     message += "\n";
 
 
