@@ -47,7 +47,6 @@ async function fetchDexSocials(pools) {
     // Fetch data for all pool IDs in parallel
     const dexSocials = await Promise.all(
       pools.map(async (pool) => {
-        console.log(pool)
         const pairId = pool.pool_id;
         const { token_1, token_2 } = pool;
 
@@ -63,7 +62,6 @@ async function fetchDexSocials(pools) {
           if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
           const result = await response.json();
-          console.log(result)
           // Get the first valid pair from the response
           const pairData = result.pair;
           if (!pairData) return { pool_id: "N/A", socials: [], websites: [] };
@@ -269,15 +267,15 @@ function formatMarketCap(value) {
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
   return value.toFixed(2); // Less than 1,000
 }
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devActivities, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
   
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devActivities);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   if (!isSummary) {
-    message += generateTop20Holders(top20Data, clusterPercentages);
+    message += generateTop20Holders(top20Data, clusterPercentages,metadata);
     message += generateTooltip();
   }
   
@@ -344,8 +342,6 @@ function formatSocials(metadata, dexSocials, tokenAddress) {
 }
 
 function extractSocialLinks(metadata, dexSocials) {
-  console.log(metadata)
-  console.log(dexSocials)
   let socials = {
     website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
     twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
@@ -403,18 +399,22 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devActivities) {
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})`;
   if (metadata.market_cap) {
     message += ` *(${formatMarketCap(metadata.market_cap)} MC)*`;
   }
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
-  
+
+  let devHolds = ""
   // Guard against undefined metadata.creator
-  if (metadata.creator) {
-    message += `🛠️ Deployer: [${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/account/${metadata.creator})\`${metadata.creator}\`\n`;
+  if(metadata.supply){
+    devHolds = `(Bought: ${(parseFloat(devActivities.totalBought / metadata.supply)* 100).toFixed(2)}%/\u200B${(parseFloat(devActivities.totalSold / metadata.supply)* 100).toFixed(2)}% Sold)`
   }
-  
+  if (metadata.creator) {
+    message += `🛠️ *Deployer* ${devHolds}:\n[${metadata.creator.slice(0, 4)}...${metadata.creator.slice(-4)}](https://solscan.io/account/${metadata.creator})\`${metadata.creator}\`\n`;
+  }
+  console.log(devActivities)
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   message += formatSocials(metadata, dexSocials, tokenAddress);
   
@@ -448,7 +448,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 }
 
 // Generates the Top 20 Holders section
-function generateTop20Holders(holdersData, clusterPercentages) {
+function generateTop20Holders(holdersData, clusterPercentages,metadata) {
   let top20Mfers = "\n🔎 *Top 20 Mfers*\n";
 
   holdersData.forEach((holder, index) => {
@@ -475,8 +475,11 @@ function generateTop20Holders(holdersData, clusterPercentages) {
 
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
     const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
-
-    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${alertEmoji}${freshEmoji}${clusterInfo}\n`;
+    let isDev = ""
+    if(metadata.creator){
+      if(holder.Address===metadata.creator) isDev = `*(dev)*`;
+    }
+    top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${isDev}${alertEmoji}${freshEmoji}${clusterInfo}\n`;
     top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
   });
 
@@ -540,9 +543,6 @@ function generateTooltip() {
   return tooltip;
 }
 
-
-
-
 async function generateTokenMessage(tokenAddress, isSummary = true) {
   const timeLabel = `generateTokenMessage_${tokenAddress}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
   console.time(timeLabel); // Start the timer with a unique label
@@ -555,9 +555,10 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const dexPayPromise = fetchDexPay(tokenAddress);
   const poolsPromise = fetchTokenMarkets(tokenAddress);
   const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
+  const devActivitiesPromise = fetchDefiActivities(metadata.creator,tokenAddress)
 
   // Wait for all the independent data to finish fetching
-  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise]);
+  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory,devActivities] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devActivitiesPromise]);
 
   // Calculate cluster percentages after fetching the required data
   const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
@@ -566,7 +567,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const dexSocials = await fetchDexSocials(pools);
 
   // Format the message based on all the fetched data
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devActivities, isSummary);
 
   console.log("Sent message");
 
