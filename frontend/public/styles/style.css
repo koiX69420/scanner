@@ -139,3 +139,39 @@ footer {
     color: white;
     padding: 10px;
 }
+
+.copyable {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+}
+
+.copyable:hover code {
+    background-color: #444;
+}
+
+.copyable::after {
+    content: "Click to copy";
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #bbb;
+    background: #222;
+    padding: 2px 5px;
+    border-radius: 3px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
+}
+
+.copyable:hover::after {
+    opacity: 1;
+}
+
+.copied::after {
+    content: "Copied!";
+    color: #03DAC6;
+    opacity: 1;
+}
