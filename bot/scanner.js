@@ -280,7 +280,34 @@ function generateTooltip() {
   return tooltip;
 }
 
+const cache = new Map();
+
+function cleanCache() {
+  const now = Date.now();
+  for (const [key, { timestamp }] of cache) {
+    if (now - timestamp > 30000) { // 30 seconds expiration
+      cache.delete(key);
+      console.log(`Cache expired: ${key} removed`);
+    }
+  }
+}
+// Run cache cleanup every 30 seconds
+setInterval(cleanCache, 10000);
+
+
 async function generateTokenMessage(tokenAddress, isSummary = true) {
+  const cacheKey = `${tokenAddress}_${isSummary}`; // Unique key for each token
+  const now = Date.now();
+
+    // Check if cache exists and is still valid (30s TTL)
+    if (cache.has(cacheKey)) {
+      const { timestamp, data } = cache.get(cacheKey);
+      if (now - timestamp < 30000) { // 30 seconds
+        console.log("Returning cached data");
+        return data; // Return cached response
+      }
+    }
+
   const timeLabel = `generateTokenMessage_${tokenAddress}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
   console.time(timeLabel); // Start the timer with a unique label
 
@@ -321,10 +348,12 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   console.timeEnd(timeLabel);
   const apiCalls = await getApiCallCount()
   console.log(`Api Calls: ${apiCalls}`)
-  return {
-    text: formattedMessage,
-    replyMarkup: { inline_keyboard: buttons },
-  };
+  const responseData = { text: formattedMessage, replyMarkup: { inline_keyboard: buttons } };
+
+  // Store the result in the cache with a timestamp
+  cache.set(cacheKey, { timestamp: now, data: responseData });
+
+  return responseData;
 }
 
 async function sendMessageWithButton(chatId, tokenAddress) {
