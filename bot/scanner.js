@@ -99,10 +99,11 @@ function formatSocials(metadata, dexSocials, tokenAddress) {
 }
 
 function extractSocialLinks(metadata, dexSocials) {
+
   const socials = {
-    website: metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
-    twitter: metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
-    telegram: metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
+    website: metadata.metadata && metadata.metadata.website ? `[Web](${metadata.metadata.website})` : null,
+    twitter: metadata.metadata && metadata.metadata.twitter ? `[𝕏](${metadata.metadata.twitter})` : null,
+    telegram: metadata.metadata && metadata.metadata.telegram ? `[TG](${metadata.metadata.telegram})` : null,
   };
 
   let isBonded = dexSocials.some(pool => pool.dexId !== "pumpfun" && pool.dexId);
