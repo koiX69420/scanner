@@ -1,85 +1,66 @@
-:root {
-    --primary-color: #03DAC6;
-    --secondary-color: #BB86FC;
-    --background-color: #121212;
-    --text-color: #e0e0e0;
-    --input-bg: #222;
-    --border-color: #444;
-    --result-bg: #1e1e1e;
-    --button-bg: #03DAC6;
-    --spacing: 10px;
-    --border-radius: 5px;
-}
-
 body {
     font-family: 'Lucida Grande', sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: #121212;
+    color: #e0e0e0;
     margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-.main-container {
+    padding: 20px;
     width: 400px;
     height: 600px;
 }
 
+/* Headings */
 h2 {
-    color: var(--primary-color);
+    color: #03DAC6;
     font-size: 18px;
     text-align: center;
 }
-
-/* Ensure input-container & result have the same width */
-.input-container, #result {
+/* Ensure both input and result have the same width */
+input, #result {
     width: 100%;
     box-sizing: border-box; /* Ensures padding doesn't affect width */
-    padding: var(--spacing);
-    background-color: var(--result-bg);
-
 }
 
-/* Input + Button Container */
-.input-container {
-    display: flex;
-    gap: var(--spacing);
-}
-
+/* Input & Button Inline Styling */
 #tokenAddress {
-    flex: 1;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--input-bg);
-    color: var(--text-color);
     padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #222;
+    color: #fff;
+    margin-right: 10px; /* Space between input and button */
+    width: calc(100% - 100px); /* Make the input take the remaining space */
+    display: inline-block; /* Allow input and button to be inline */
 }
 
 #scanButton {
-    width: 70px;
     padding: 10px 20px;
-
-    background-color: var(--button-bg);
-    color: white;
+    background-color: #03DAC6;
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: 5px;
+    color: white;
     cursor: pointer;
+    font-size: 14px;
     display: inline-block; /* Ensure button is inline */
-
+}
+/* Input & Button */
+input {
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #222;
+    color: #fff;
+    margin-bottom: 10px;
+    width: 100%;
 }
 
-/* Result Box (Matches input-container width) */
+/* Results Styling */
 #result {
+    background-color: #1e1e1e;
     padding: 15px;
-    border-radius: var(--border-radius);
+    border-radius: 8px;
     font-size: 14px;
     line-height: 1.6;
-    margin-top: var(--spacing);
-    min-height: 50px;
 }
-
 
 /* Links */
 a {
@@ -150,17 +131,16 @@ br {
     width: 150px;
     height: 150px;
 }
-
 footer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background-color: #333;
+    background-color: var(--footer-bg);
     color: white;
     padding: 10px;
     font-size: 12px;
-    height: 14px;
+    height: 34px; /* Adjusted to allow text centering */
     display: flex;
     align-items: center; /* Vertical centering */
     justify-content: flex-start; /* Align text to the left */
@@ -207,26 +187,3 @@ footer {
     color: #03DAC6;
     opacity: 1;
 }
-
-/* Modern and Clean Scrollbar */
-::-webkit-scrollbar {
-    width: 10px;  /* Horizontal scrollbar width */
-    height: 10px; /* Vertical scrollbar height */
-}
-
-::-webkit-scrollbar-track {
-    background-color: #333;  /* Track color */
-    border-radius: 10px;  /* Rounded corners for the track */
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: #03DAC6; /* Thumb color */
-    border-radius: 10px;  /* Rounded corners for the thumb */
-    transition: background-color 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: #03a89c; /* Slightly darker shade for the thumb when hovered */
-}
-
-
