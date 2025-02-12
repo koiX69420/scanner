@@ -95,8 +95,15 @@ function formatDexUpdates(dexPay) {
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
-  const { socials, isBonded } = extractSocialLinks(metadata, dexSocials);
-  return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` + (isBonded ? "🪢 Bonded\n\n" : "\n");
+  const { socials, isBonded, totalVolume,priceChange } = extractSocialLinks(metadata, dexSocials);
+  
+  const formattedVolume = `💹 Volume in $: ${formatMarketCap(totalVolume.h24)} (24h) | ${formatMarketCap(totalVolume.h6)} (6h) | ${formatMarketCap(totalVolume.h1)} (1h) | ${formatMarketCap(totalVolume.m5)} (5m)`;
+  const formattedPriceChange = `💰 Change in %: ${formatMarketCap(priceChange.h24)} (24h) | ${formatMarketCap(priceChange.h6)} (6h) | ${formatMarketCap(priceChange.h1)} (1h) | ${formatMarketCap(priceChange.m5)} (5m)`;
+
+  return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` +
+         `${formattedVolume}\n` +
+         `${formattedPriceChange}\n` +
+         (isBonded ? "🪢 Bonded\n\n" : "\n");
 }
 
 function extractSocialLinks(metadata, dexSocials) {
@@ -109,8 +116,24 @@ function extractSocialLinks(metadata, dexSocials) {
 
   let isBonded = dexSocials.some(pool => pool.dexId !== "pumpfun" && pool.dexId);
   let raydiumSocialsExtracted = false;
+  let totalVolume = { h24: 0, h6: 0, h1: 0, m5: 0 };
+  let priceChange = { m5: -0.29, h1: 1.49, h6: -1.05, h24: -8.79 };
 
   dexSocials.forEach(pool => {
+    if (pool.volume) {
+      totalVolume.h24 += pool.volume.h24 || 0;
+      totalVolume.h6 += pool.volume.h6 || 0;
+      totalVolume.h1 += pool.volume.h1 || 0;
+      totalVolume.m5 += pool.volume.m5 || 0;
+    }
+
+    if (pool.priceChange) {
+      priceChange.h24 += pool.priceChange.h24 || 0;
+      priceChange.h6 += pool.priceChange.h6 || 0;
+      priceChange.h1 += pool.priceChange.h1 || 0;
+      priceChange.m5 += pool.priceChange.m5 || 0;
+    }
+
     if (pool.dexId === "raydium" && !raydiumSocialsExtracted) {
       pool.websites?.forEach(website => {
         if (website?.url) socials.website = `[Web](${website.url})`;
@@ -127,7 +150,7 @@ function extractSocialLinks(metadata, dexSocials) {
     }
   });
 
-  return { socials, isBonded };
+  return { socials, isBonded,totalVolume,priceChange };
 }
 
 function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {

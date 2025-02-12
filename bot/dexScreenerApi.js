@@ -54,7 +54,8 @@ async function fetchDexSocials(pools) {
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
                     const result = await response.json();
-                    // Get the first valid pair from the response
+                    console.log(result)
+
                     const pairData = result.pair;
                     if (!pairData) return { pool_id: "N/A", socials: [], websites: [] };
 
@@ -72,14 +73,14 @@ async function fetchDexSocials(pools) {
                             url: website.url
                         }));
 
-                    return { pool_id: pairId, socials, websites, dexId };
+                    return { pool_id: pairId, socials, websites, dexId,volume:pairData.volume,priceChange:pairData.priceChange };
                 } catch (error) {
                     console.error(`⚠️ Error fetching data for pair ${pairId}:`, error.message);
                     return { pool_id: pairId, socials: [], websites: [] };
                 }
             })
         );
-
+        console.log(dexSocials)
         return dexSocials;
     } catch (error) {
         console.error("❌ Error fetching Dexscreener socials:", error.message);
