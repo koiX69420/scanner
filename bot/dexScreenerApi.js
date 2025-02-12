@@ -54,7 +54,6 @@ async function fetchDexSocials(pools) {
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
                     const result = await response.json();
-                    console.log(result)
 
                     const pairData = result.pair;
                     if (!pairData) return { pool_id: "N/A", socials: [], websites: [] };
@@ -80,7 +79,6 @@ async function fetchDexSocials(pools) {
                 }
             })
         );
-        console.log(dexSocials)
         return dexSocials;
     } catch (error) {
         console.error("❌ Error fetching Dexscreener socials:", error.message);
