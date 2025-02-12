@@ -336,6 +336,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
       const { timestamp, data } = cache.get(cacheKey);
       if (now - timestamp < 30000) { // 30 seconds
         console.log("Returning cached data");
+        availableApiCalls+=API_CALLS_PER_REQUEST;
         return data; // Return cached response
       }
     }
