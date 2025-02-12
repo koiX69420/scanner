@@ -4,6 +4,7 @@ const bot = require("../tg/tg");
 
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 60
+const MAX_HOLDERS_PAGE_SIZE = 30 // 10,20,30,40 MAX holders should be restles dividable by the page
 const MAX_API_CALLS_PER_MINUTE = 1000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
 const API_CALLS_PER_REQUEST = MAX_HOLDERS * 3 + 30;
@@ -345,7 +346,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
-  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, 40);
+  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
   const dexPayPromise = fetchDexPay(tokenAddress);
   const poolsPromise = fetchTokenMarkets(tokenAddress);
