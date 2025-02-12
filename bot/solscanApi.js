@@ -1,14 +1,22 @@
-const SOLSCAN_API_KEY = process.env.SOLSCAN_API_KEY; // Ensure you use your actual API key
+const SOLSCAN_API_KEYS = process.env.SOLSCAN_API_KEYS?.split(",") || []; // Load multiple API keys
+if (SOLSCAN_API_KEYS.length === 0) throw new Error("No SOLSCAN API keys provided");
+let currentApiKeyIndex = 0; // Track which API key to use
 
-// Global variable to track the number of API calls made
 let apiCallCount = 0;
+
+// Function to get the next API key in round-robin fashion
+function getNextApiKey() {
+  const apiKey = SOLSCAN_API_KEYS[currentApiKeyIndex]; // Get the current key
+  currentApiKeyIndex = (currentApiKeyIndex + 1) % SOLSCAN_API_KEYS.length; // Move to next key
+  return apiKey;
+}
 
 async function makeApiCall(url) {
   try {
     apiCallCount++; // Increment API call count
-    // console.log(apiCallCount)
-    // console.log(url)
-    const response = await fetch(url, { method: "GET", headers: { token: SOLSCAN_API_KEY } });
+    const apiKey = getNextApiKey(); // Get next available API key
+
+    const response = await fetch(url, { method: "GET", headers: { token: apiKey } });
 
     if (!response.ok) {
       const responseText = await response.text();
