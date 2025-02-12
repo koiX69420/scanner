@@ -3,7 +3,7 @@ const bot = require("../tg/tg");
 
 
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const MAX_HOLDERS = 80
+const MAX_HOLDERS = 120
 const MAX_HOLDERS_PAGE_SIZE = 40 // 10,20,30,40 MAX holders should be restles dividable by the page
 const MAX_API_CALLS_PER_MINUTE = 1000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
