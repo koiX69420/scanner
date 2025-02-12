@@ -1,23 +1,48 @@
 {
-    "manifest_version": 3,
-    "name": "Mandog Trench Tools",
-    "version": "1.0",
-    "description": "Scan Solana tokens instantly!",
-    "author": {
-        "email": "info@mandog.fun"
-      },
-    "host_permissions": [
-      "https://mandog.fun/",
-        "*://*/*"
-        ], 
-    "action": {
-      "default_popup": "index.html",
-      "default_icon": {
-        "32": "128.png"
-      }
-    },
-    "content_security_policy": {
-      "extension_pages": "script-src 'self'; object-src 'none';"
+  "manifest_version": 3,
+  "name": "Mandog Trench Tools",
+  "version": "1.0",
+  "description": "Scan Solana tokens instantly!",
+  "author": {
+    "email": "info@mandog.fun"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://mandog.fun/",
+    "http://localhost:5000/",
+    "https://photon-sol.tinyastro.io/en/memescope/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://photon-sol.tinyastro.io/en/memescope/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
     }
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "32": "128.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "128.png"
+      ],
+      "matches": [
+        "https://photon-sol.tinyastro.io/*"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none';"
   }
-  
+}

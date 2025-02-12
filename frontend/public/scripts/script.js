@@ -3,7 +3,13 @@ function isValidSolanaAddress(address) {
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     return base58Regex.test(address);
 }
-
+window.addEventListener("message", (event) => {
+    if (event.source !== window) return; // Ensure message comes from the same page
+    if (event.data.type === "RUN_FETCH_TOKEN_DATA") {
+        console.log("Received message - executing fetchTokenData()");
+        fetchTokenData(); // Call your function
+    }
+});
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData() {
     const tokenAddress = document.getElementById("tokenAddress").value.trim();
