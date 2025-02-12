@@ -41,11 +41,13 @@ async function fetchDexSocials(pools) {
             pools.map(async (pool) => {
                 const pairId = pool.pool_id;
                 const { token_1, token_2 } = pool;
-
                 // Check if either the base or quote token is Solana (SOL)
-                if (token_1 !== 'So11111111111111111111111111111111111111112' && token_2 !== 'So11111111111111111111111111111111111111112') {
+                if (
+                    !['So11111111111111111111111111111111111111112', 'So11111111111111111111111111111111111111111'].includes(token_1) &&
+                    !['So11111111111111111111111111111111111111112', 'So11111111111111111111111111111111111111111'].includes(token_2)
+                  ) {
                     return { pool_id: "N/A", socials: [], websites: [] };
-                }
+                  }
 
                 const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
 
