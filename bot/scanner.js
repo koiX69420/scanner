@@ -17,7 +17,8 @@ const {
   fetchTokenCreationHistory,
   getApiCallCount,
   getTokenHolderData,
-  getFundingMap
+  getFundingMap,
+  fetchTokenAccounts
 } = require('./solscanApi');
 
 const {
@@ -33,12 +34,12 @@ const {
 
 
 
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devActivities, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devTokenAccounts, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
   
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devActivities);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devTokenAccounts);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   if (!isSummary) {
     message += generateTop20Holders(top20Data, clusterPercentages,metadata);
@@ -138,22 +139,28 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devActivities) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devTokenAccounts) {
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})`;
   if (metadata.market_cap) {
     message += ` *(${formatMarketCap(metadata.market_cap)} MC)*`;
   }
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 
-  let devHolds = ""
-  // Guard against undefined metadata.creator
-  if(metadata.supply){
-    devHolds = `(Bought: ${(parseFloat(devActivities.totalBought / metadata.supply)* 100).toFixed(2)}%/\u200B${(parseFloat(devActivities.totalSold / metadata.supply)* 100).toFixed(2)}% Sold)`
+  let devHolds = "";
+  
+  if (metadata.supply) {
+    // Find the developer's token account holding the token
+    const devTokenAccount = devTokenAccounts.find(acc => acc.token_address === tokenAddress);
+    
+    if (devTokenAccount) {
+      devHolds = `(${((devTokenAccount.amount / metadata.supply) * 100).toFixed(2)}%)`;
+    }
   }
+
   if (metadata.creator) {
-    message += `🛠️ *Deployer* ${devHolds}:\n\`${metadata.creator}\`\n`;
+    message += `🛠️ *Deployer ${devHolds}*\n\`${metadata.creator}\`\n`;
   }
-  console.log(devActivities)
+  
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   message += formatSocials(metadata, dexSocials, tokenAddress);
   
@@ -320,10 +327,10 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const dexPayPromise = fetchDexPay(tokenAddress);
   const poolsPromise = fetchTokenMarkets(tokenAddress);
   const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
-  const devActivitiesPromise = fetchDefiActivities(metadata.creator,tokenAddress)
+  const devTokenAccountsPromise = fetchTokenAccounts(metadata.creator)
 
   // Wait for all the independent data to finish fetching
-  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory,devActivities] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devActivitiesPromise]);
+  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory,devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devTokenAccountsPromise]);
 
   // Calculate cluster percentages after fetching the required data
   const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
@@ -332,7 +339,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const dexSocials = await fetchDexSocials(pools);
 
   // Format the message based on all the fetched data
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devActivities, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devTokenAccounts, isSummary);
 
   console.log("Sent message");
 

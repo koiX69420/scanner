@@ -98,6 +98,12 @@ async function fetchSolTransfers(walletAddress) {
   return await makeApiCall(url) || [];
 }
 
+// Function to fetch Sol transfers for a wallet address
+async function fetchTokenAccounts(walletAddress) {
+  const url = `https://pro-api.solscan.io/v2.0/account/token-accounts?address=${walletAddress}&type=token&page=1&page_size=40`;
+  return await makeApiCall(url) || [];
+}
+
 // Function to fetch token markets for a token address
 async function fetchTokenMarkets(tokenAddress) {
   const url = `https://pro-api.solscan.io/v2.0/token/markets?token[]=${tokenAddress}&page=1&page_size=10`;
@@ -216,5 +222,6 @@ module.exports = {
   fetchSolTransfers,
   getApiCallCount,
   getTokenHolderData,
-  getFundingMap
+  getFundingMap,
+  fetchTokenAccounts
 };
