@@ -97,8 +97,8 @@ function formatDexUpdates(dexPay) {
 function formatSocials(metadata, dexSocials, tokenAddress) {
   const { socials, isBonded, totalVolume,priceChange } = extractSocialLinks(metadata, dexSocials);
   
-  const formattedVolume = `💹 Volume in $: ${formatMarketCap(totalVolume.h24)} (24h) | ${formatMarketCap(totalVolume.h6)} (6h) | ${formatMarketCap(totalVolume.h1)} (1h) | ${formatMarketCap(totalVolume.m5)} (5m)`;
-  const formattedPriceChange = `💰 Change in %: ${formatMarketCap(priceChange.h24)} (24h) | ${formatMarketCap(priceChange.h6)} (6h) | ${formatMarketCap(priceChange.h1)} (1h) | ${formatMarketCap(priceChange.m5)} (5m)`;
+  const formattedVolume = `💰 Volume in $: ${formatMarketCap(totalVolume.h24)} (24h) | ${formatMarketCap(totalVolume.h6)} (6h) | ${formatMarketCap(totalVolume.h1)} (1h) | ${formatMarketCap(totalVolume.m5)} (5m)`;
+  const formattedPriceChange = `💹 Change in %: ${formatMarketCap(priceChange.h24)} (24h) | ${formatMarketCap(priceChange.h6)} (6h) | ${formatMarketCap(priceChange.h1)} (1h) | ${formatMarketCap(priceChange.m5)} (5m)`;
 
   return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` +
          `${formattedVolume}\n` +
