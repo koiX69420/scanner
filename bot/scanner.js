@@ -169,7 +169,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   }
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 
-  let devHolds = "";
+  let devHolds = "(0.00%)";
   
   if (metadata.supply) {
     // Find the developer's token account holding the token
