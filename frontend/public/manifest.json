@@ -12,8 +12,7 @@
   ],
   "host_permissions": [
     "https://mandog.fun/",
-    "http://localhost:5000/",
-    "https://photon-sol.tinyastro.io/en/memescope/*"
+    "http://localhost:5000/"
   ],
   "background": {
     "service_worker": "background.js"
@@ -21,7 +20,9 @@
   "content_scripts": [
     {
       "matches": [
-        "https://photon-sol.tinyastro.io/en/memescope/*"
+        "https://photon-sol.tinyastro.io/en/memescope/*",
+        "https://bullx.io/pump-vision/*",
+        "https://axiom.trade/pulse/*"
       ],
       "js": [
         "content.js"
@@ -41,7 +42,9 @@
         "128.png"
       ],
       "matches": [
-        "https://photon-sol.tinyastro.io/*"
+        "https://photon-sol.tinyastro.io/*",
+        "https://bullx.io/*",
+        "https://axion.trade/*"
       ]
     }
   ],
