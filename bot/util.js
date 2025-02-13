@@ -74,11 +74,11 @@ function formatTimestamp(timestamp) {
       timeZoneName: "short",
     });
   }
-  function formatMarketCap(value) {
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`; // Billions
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`; // Millions
-    if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`; // Thousands
-    return value.toFixed(2); // Less than 1,000
+  function formatMarketCap(value,commas=2) {
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(commas)}B`; // Billions
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(commas)}M`; // Millions
+    if (value >= 1_000) return `${(value / 1_000).toFixed(commas)}K`; // Thousands
+    return value.toFixed(commas); // Less than 1,000
   }
 
 module.exports = {
