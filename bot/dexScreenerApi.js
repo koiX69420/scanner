@@ -48,7 +48,7 @@ async function fetchDexSocials(pools) {
                   ) {
                     return { pool_id: "N/A", socials: [], websites: [] };
                   }
-
+                  console.log(pool)
                 const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
 
                 try {

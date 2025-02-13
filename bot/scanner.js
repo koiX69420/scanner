@@ -326,6 +326,13 @@ function cleanCache() {
 // Run cache cleanup every 30 seconds
 setInterval(cleanCache, 10000);
 
+async function getPumpFunWallet(pools) {
+  const targetProgramId = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
+
+  const foundPool = pools.find(pool => pool.program_id === targetProgramId);
+
+  return foundPool ? { pool_id: foundPool.pool_id, program_id: foundPool.program_id } : {};
+}
 
 async function generateTokenMessage(tokenAddress, isSummary = true) {
   const cacheKey = `${tokenAddress}_${isSummary}`; // Unique key for each token
@@ -355,14 +362,17 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const devTokenAccountsPromise = fetchTokenAccounts(metadata.creator)
 
   // Wait for all the independent data to finish fetching
-  const [moreHolderData, fundingMap, dexPay, pools, tokenHistory,devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devTokenAccountsPromise]);
+  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory,devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devTokenAccountsPromise]);
+  const pumpfun = await getPumpFunWallet(pools)
 
-  // Calculate cluster percentages after fetching the required data
+  const moreHolderData = pumpfun.pool_id
+    ? rawMoreHolderData.filter(holder => holder.Address !== pumpfun.pool_id)
+    : rawMoreHolderData;
+
   const clusterPercentages = await calculateClusterPercentages(moreHolderData, fundingMap);
 
   // Fetch Dex Socials (which also can run in parallel)
   const dexSocials = await fetchDexSocials(pools);
-
   // Format the message based on all the fetched data
   const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devTokenAccounts, isSummary);
 
