@@ -98,8 +98,8 @@ function formatDexUpdates(dexPay) {
 function formatSocials(metadata, dexSocials, tokenAddress) {
   const { socials, isBonded, totalVolume,priceChange } = extractSocialLinks(metadata, dexSocials);
   
-  const formattedVolume = `💰 Vol. USD: _24h_ *${formatMarketCap(totalVolume.h24,0)}*  | _1h_ *${formatMarketCap(totalVolume.h1,0)}*  | _5m_ *${formatMarketCap(totalVolume.m5,0)}* `;
-  const formattedPriceChange = `💹 Chg. %: _24h_ *${formatMarketCap(priceChange.h24,0)}*  | _1h_ *${formatMarketCap(priceChange.h1,0)}*  | _5m_ *${formatMarketCap(priceChange.m5,0)}* `;
+  const formattedVolume = `💰 Vol. USD: _24h_:*${formatMarketCap(totalVolume.h24,0)}*  | _1h_:*${formatMarketCap(totalVolume.h1,0)}*  | _5m_:*${formatMarketCap(totalVolume.m5,0)}* `;
+  const formattedPriceChange = `💹 Chg. %: _24h_:*${formatMarketCap(priceChange.h24,0)}*  | _1h_:*${formatMarketCap(priceChange.h1,0)}*  | _5m_:*${formatMarketCap(priceChange.m5,0)}* `;
 
   return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` +
          `${formattedVolume}\n` +
