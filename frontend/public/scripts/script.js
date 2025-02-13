@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
-    if(!tokenAddress) tokenAddress = document.getElementById("tokenAddress").value.trim();
+    if(typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
+    console.log(tokenAddress)
     const resultDiv = document.getElementById("result");
     // Validate Solana address
     if (!isValidSolanaAddress(tokenAddress)) {
