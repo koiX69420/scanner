@@ -18,17 +18,15 @@ bot.onText(/\/start/, (msg) => {
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
 });
 
-// bot.onText(/\/verify/, (msg) => {
-//   console.log(msg)
-//   const chatId = msg.chat.id;
-//   const tgId = msg.from.id; // Get Telegram user ID
-//   const verifyLink = `https://mandog.fun/verify?tgId=${tgId}`;
+bot.onText(/\/verify/, (msg) => {
+  console.log(msg)
+  const chatId = msg.chat.id;
+  const tgId = msg.from.id; // Get Telegram user ID
+  const verifyLink = `localhost:5000/verify?tgId=${tgId}`;
 
 
-//   bot.sendMessage(chatId, verifyLink, 
-//     { parse_mode: "Markdown",reply_markup: {
-//       inline_keyboard: [[{ text: "🔗 Verify Wallet", url: verifyLink }]],
-//   }});
+  bot.sendMessage(chatId, verifyLink, 
+    { parse_mode: "Markdown"});
 
-// });
+});
 module.exports = bot;
