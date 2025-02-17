@@ -1,17 +1,28 @@
 console.log("Content script is running...");
 
-// Function to determine the active website
+// Function to determine the active website and subpage
 function getActiveWebsite() {
-    if (window.location.hostname.includes("photon-sol.tinyastro.io")) {
-        return "photon";
-    } else if (window.location.hostname.includes("bullx.io")) {
-        return "bullx";
-    } else if (window.location.hostname.includes("pump.fun")) {
+    const hostname = window.location.hostname;
+    let pathname = window.location.pathname;
+
+    if (hostname.includes("photon-sol.tinyastro.io")) {
+     
+        pathname = pathname.replace(/^\/[a-z]{2}\//, "/");
+
+        if (pathname.includes("/memescope")) {
+            return "photon"; // Specific subpage
+        }
+    } else if (hostname.includes("bullx.io")) {
+        if (pathname.includes("/pump-vision")) {
+            return "bullx"; // Specific subpage
+        }
+    } else if (hostname.includes("pump.fun")) {
         return "pumpfun";
+    } else if (hostname.includes("axiom.trade")) {
+        if (pathname.includes("/pulse")) {
+            return "axiom"; // Specific subpage
+        }
     }
-    // else if (window.location.hostname.includes("axiom.trade")) {
-    //     return "axiom";
-    // }
     return null;
 }
 
@@ -32,9 +43,9 @@ function injectIcon() {
     else if (site === "pumpfun") {
         injectForPumpfun();
     }
-    // else if (site === "axiom") {
-    //     injectForAxiom();
-    // }
+    else if (site === "axiom") {
+        injectForAxiom();
+    }
 }
 
 // Function to inject the icon
@@ -194,71 +205,69 @@ function injectForBullX() {
     processBatch();
 }
 
-// function injectForAxiom() {
-//     // Find the parent div with the specified class (escaped special characters)
-//     const parentDiv = document.querySelector(".jsx-9e3712a1fc501a87.flex-1.border-primaryStroke.bg-backgroundSecondary.border-\\[1px\\].flex.flex-row.w-full.justify-start.items-start.rounded-\\[4px\\].overflow-hidden");
+function injectForAxiom() {
+    // Find the parent div with the specified class (escaped special characters)
+    const parentDiv = document.querySelector(".jsx-9e3712a1fc501a87.flex-1.border-primaryStroke.bg-backgroundSecondary.border-\\[1px\\].flex.flex-row.w-full.justify-start.items-start.rounded-\\[4px\\].overflow-hidden");
 
-//     if (!parentDiv) return;
+    if (!parentDiv) return;
 
 
-//     const lastChildDiv = parentDiv.children[2];
-//     if (!lastChildDiv) return;
+    const lastChildDiv = parentDiv.children[2];
+    if (!lastChildDiv) return;
 
-//     // Now find the child div that we want to target inside lastChildDiv
-//     const childDiv = lastChildDiv.querySelector(".flex.flex-1.flex-col.w-full.overflow-y-auto");
-//     if (!childDiv) return;
+    // Now find the child div that we want to target inside lastChildDiv
+    const childDiv = lastChildDiv.querySelector(".flex.flex-1.flex-col.w-full.overflow-y-auto");
+    if (!childDiv) return;
 
-//     // Get the first child of childDiv
-//     const firstChild = childDiv.firstElementChild;
-//     if (!firstChild) return;
+    // Get the first child of childDiv
+    const firstChild = childDiv.firstElementChild;
+    if (!firstChild) return;
 
-//     // Iterate over all children of the firstChild
-//     const allChildDivs = firstChild.querySelectorAll(".flex.flex-row.flex-shrink-0.gap-\\[8px\\].justify-start.items-center.\\[\\&_i\\]\\:text-\\[14px\\]");
-//     allChildDivs.forEach(targetContainer => {
+    // Iterate over all children of the firstChild
+    const allChildDivs = firstChild.querySelectorAll(".flex.flex-row.flex-shrink-0.gap-\\[8px\\].justify-start.items-center.\\[\\&_i\\]\\:text-\\[14px\\]");
+    allChildDivs.forEach(targetContainer => {
 
-//         // Check if the custom button already exists in the target container to avoid duplication
-//         if (targetContainer.querySelector(".mandog-button")) return;
+        // Check if the custom button already exists in the target container to avoid duplication
+        if (targetContainer.querySelector(".mandog-button")) return;
 
-//         // Create the custom mandog button wrapped in an <a> tag
-//         const anchor = document.createElement("a");
-//         anchor.className = "mandog-button-wrapper";
-//         anchor.style.cursor = "pointer";
-//         anchor.style.display = "flex"; // Ensures it aligns properly
-//         anchor.style.alignItems = "center";
+        // Create the custom mandog button wrapped in an <a> tag
+        const anchor = document.createElement("a");
+        anchor.className = "flex items-center";
+        anchor.style.cursor = "pointer";
+        anchor.style.display = "flex"; // Ensures it aligns properly
+        anchor.style.alignItems = "center";
+        anchor.rel="noopener noreferrer"
+        // Create the custom mandog button
+        const img = document.createElement("img");
+        img.className = "mandog-button";
+        img.src = chrome.runtime.getURL("128.png"); // Use your icon here
+        img.alt = "Mandog Icon";
+        img.style.width = "16px";
+        img.style.height = "16px";
+        img.style.cursor = "pointer";
+        img.style.zIndex = 1000;
 
-//         // Create the custom mandog button
-//         const img = document.createElement("img");
-//         img.className = "mandog-button";
-//         img.src = chrome.runtime.getURL("128.png"); // Use your icon here
-//         img.alt = "Mandog Icon";
-//         img.style.width = "16px";
-//         img.style.height = "16px";
-//         img.style.cursor = "pointer";
-//         img.style.zIndex = 1000;
+        anchor.appendChild(img);
 
-//         anchor.appendChild(img);
+        anchor.addEventListener("click", function (event) {
+            event.preventDefault(); // Prevent any default anchor behavior
+            chrome.runtime.sendMessage(
+                { type: "RUN_FETCH_TOKEN_DATA", token: "" },
+            );
+        });
 
-//         anchor.addEventListener("click", function (event) {
-//             event.preventDefault(); // Prevent any default anchor behavior
-//             console.log("🐕 Token Address Clicked:", tokenAddress);
-//             chrome.runtime.sendMessage(
-//                 { type: "RUN_FETCH_TOKEN_DATA", token: tokenAddress },
-//                 (response) => console.log("📩 Response from extension:", response)
-//             );
-//         });
+        // Get the last child of the target container
+        const lastChild = targetContainer.lastElementChild;
 
-//         // Get the last child of the target container
-//         const lastChild = targetContainer.lastElementChild;
-
-//         // Insert the button as the second last child (before the last one)
-//         if (lastChild) {
-//             targetContainer.insertBefore(anchor, lastChild);
-//         } else {
-//             // If there's no last child, append the image as the first child (only child)
-//             targetContainer.appendChild(anchor);
-//         }
-//     });
-// }
+        // Insert the button as the second last child (before the last one)
+        if (lastChild) {
+            targetContainer.insertBefore(anchor, lastChild);
+        } else {
+            // If there's no last child, append the image as the first child (only child)
+            targetContainer.appendChild(anchor);
+        }
+    });
+}
 
 
 

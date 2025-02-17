@@ -20,9 +20,10 @@
   "content_scripts": [
     {
       "matches": [
-        "https://photon-sol.tinyastro.io/en/memescope/*",
-        "https://bullx.io/pump-vision/*",
-        "https://pump.fun/coin/*"
+        "https://photon-sol.tinyastro.io/*",
+        "https://bullx.io/*",
+        "https://pump.fun/coin/*",
+        "https://axiom.trade/*"
       ],
       "js": [
         "content.js"
@@ -44,7 +45,8 @@
       "matches": [
         "https://photon-sol.tinyastro.io/*",
         "https://bullx.io/*",
-        "https://pump.fun/*"
+        "https://pump.fun/*",
+        "https://axiom.trade/*"
       ]
     }
   ],
