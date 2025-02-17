@@ -40,6 +40,7 @@ async function fetchDexSocials(pools) {
         const dexSocials = await Promise.all(
             pools.map(async (pool) => {
                 const pairId = pool.pool_id;
+
                 const { token_1, token_2 } = pool;
                 // Check if either the base or quote token is Solana (SOL)
                 if (
@@ -48,7 +49,7 @@ async function fetchDexSocials(pools) {
                   ) {
                     return { pool_id: "N/A", socials: [], websites: [] };
                   }
-                  console.log(pool)
+
                 const url = `https://api.dexscreener.com/latest/dex/pairs/${chainId}/${pairId}`;
 
                 try {
@@ -73,7 +74,7 @@ async function fetchDexSocials(pools) {
                             label: website.label.toLowerCase(),
                             url: website.url
                         }));
-
+        
                     return { pool_id: pairId, socials, websites, dexId,volume:pairData.volume,priceChange:pairData.priceChange };
                 } catch (error) {
                     console.error(`⚠️ Error fetching data for pair ${pairId}:`, error.message);

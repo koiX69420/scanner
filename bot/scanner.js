@@ -5,7 +5,7 @@ const bot = require("../tg/tg");
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 90
 const MAX_HOLDERS_PAGE_SIZE = 30 // 10,20,30,40 MAX holders should be restles dividable by the page
-const MAX_API_CALLS_PER_MINUTE = 1000;
+const MAX_API_CALLS_PER_MINUTE = 3000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
 const API_CALLS_PER_REQUEST = MAX_HOLDERS * 3 + 30;
 const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
@@ -317,7 +317,7 @@ const cache = new Map();
 function cleanCache() {
   const now = Date.now();
   for (const [key, { timestamp }] of cache) {
-    if (now - timestamp > 30000) { // 30 seconds expiration
+    if (now - timestamp > 20000) { // 30 seconds expiration
       cache.delete(key);
       console.log(`Cache expired: ${key} removed`);
     }
