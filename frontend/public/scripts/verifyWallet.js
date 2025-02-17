@@ -1,74 +1,114 @@
 // Check if the current page is the verify page with tgId in the URL
 if (window.location.pathname === "/verify" && new URLSearchParams(window.location.search).has("tgId")) {
+    console.log(window.Buffer)
+    console.log("🔹 Starting wallet verification...");
+    console.log("✅ Verification page detected");
+    console.log("solanaWeb3:", window.solanaWeb3);
     async function verifyWallet() {
+        console.log(window.Buffer)
+        console.log("🔹 Starting wallet verification...");
+        console.log("✅ Verification page detected");
+        console.log("solanaWeb3:", window.solanaWeb3);
         const params = new URLSearchParams(window.location.search);
-        const tgId = params.get("tgId"); // Get Telegram ID from URL
+        const tgId = params.get("tgId");
 
         if (!tgId) {
+            console.error("❌ Missing Telegram ID!");
             alert("Missing Telegram ID!");
             return;
         }
 
         try {
             const provider = window.solana; // Phantom or Backpack
+            if (!provider) {
+                throw new Error("Solana provider not found. Make sure Phantom is installed.");
+            }
 
-            // Connect to the wallet once
+            console.log("🔹 Connecting to wallet...");
             await provider.connect();
+            console.log("✅ Wallet connected!");
+
             const walletAddress = provider.publicKey.toString();
-            
+            console.log("🔹 Wallet Address:", walletAddress);
+
             // Sign the message to verify ownership
             const message = `Sign this message to verify ownership of this wallet for Telegram ID: ${tgId}`;
             const encodedMessage = new TextEncoder().encode(message);
             const signedMessage = await provider.signMessage(encodedMessage, "utf8");
-            console.log(signedMessage);
-            
+            console.log("✅ Message signed successfully:", signedMessage);
+
             // Payment parameters
-            const receivingWalletAddress = "5twk4qwDCU4dcUzHQSXyL86qv97UVbvCTEWYyW8Vo6QK";  // The wallet address where the payment should go
-            const paymentAmount = 0.001;  // Payment amount in SOL (for example)
+            const receivingWalletAddress = new window.solanaWeb3.PublicKey("5twk4qwDCU4dcUzHQSXyL86qv97UVbvCTEWYyW8Vo6QK");
+            const paymentAmount = 0.001;
+            console.log(`🔹 Sending ${paymentAmount} SOL to ${receivingWalletAddress}`);
 
-            // Prompt user to make payment
-            const paymentMessage = `To complete the verification, please send ${paymentAmount} SOL to the following address: ${receivingWalletAddress}`;
+            // Check values before creating the transaction
+            console.log("🔹 Provider PublicKey:", provider.publicKey);
+            console.log("🔹 Receiving Wallet Address:", receivingWalletAddress);
+            console.log("🔹 LAMPORTS_PER_SOL:", window.solanaWeb3.LAMPORTS_PER_SOL);
+            console.log("🔹 Payment Amount in Lamports:", window.solanaWeb3.LAMPORTS_PER_SOL * paymentAmount);
 
-            // Create a transaction to send SOL to the receiving wallet address
-            const transaction = new window.solana.Transaction().add(
-                window.solana.SystemProgram.transfer({
+
+            // Get the recent blockhash from the Solana network
+            const connection = new window.solanaWeb3.Connection("https://docs-demo.solana-mainnet.quiknode.pro/");
+            const { blockhash } = await connection.getLatestBlockhash();
+
+            // Create a transaction with the recentBlockhash and feePayer
+            const transaction = new window.solanaWeb3.Transaction({
+                recentBlockhash: blockhash, // Add the recent blockhash here
+                feePayer: provider.publicKey, // Set the fee payer (the wallet sending the transaction)
+            }).add(
+                window.solanaWeb3.SystemProgram.transfer({
                     fromPubkey: provider.publicKey,
-                    toPubkey: new window.solana.PublicKey(receivingWalletAddress),
-                    lamports: window.solana.LAMPORTS_PER_SOL * paymentAmount, // Convert SOL to lamports
+                    toPubkey: receivingWalletAddress,
+                    lamports: window.solanaWeb3.LAMPORTS_PER_SOL * paymentAmount, // Convert SOL to lamports
                 })
             );
 
+            console.log("🔹 Constructed transaction:", transaction);
+
             // Sign and send the transaction
+            console.log("🔹 Sending transaction...");
             const signature = await provider.signAndSendTransaction(transaction);
+            console.log("✅ Transaction sent! Signature:", signature);
 
-            // Wait for the transaction to be confirmed
+            // Wait for confirmation
+            console.log("🔹 Waiting for transaction confirmation...");
             const confirmation = await provider.connection.confirmTransaction(signature);
+            console.log("✅ Transaction confirmation response:", confirmation);
 
-            // If confirmation is successful, proceed
-            if (confirmation.value.err === null) {
-                // Once payment is confirmed, send the signed message to the backend for verification
-                const res = await fetch("/api/verify-wallet", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ tgId, walletAddress, signedMessage }),
-                });
-
-                const result = await res.json();
-                if (result.success) {
-                    alert("✅ Wallet linked successfully and payment verified!");
-                } else {
-                    alert("❌ Verification failed");
-                }
-            } else {
+            if (confirmation.value.err !== null) {
+                console.error("❌ Transaction failed:", confirmation.value.err);
                 alert("❌ Payment failed. Please try again.");
+                return;
+            }
+
+            console.log("✅ Payment successful! Proceeding with backend verification...");
+
+            // Send verification request to backend
+            const res = await fetch("/api/verify-wallet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tgId, walletAddress, signedMessage }),
+            });
+
+            const result = await res.json();
+            console.log("🔹 Backend response:", result);
+
+            if (result.success) {
+                console.log("✅ Wallet linked successfully!");
+                alert("✅ Wallet linked successfully and payment verified!");
+            } else {
+                console.error("❌ Backend verification failed:", result);
+                alert("❌ Verification failed.");
             }
         } catch (error) {
-            console.error("Error verifying wallet:", error);
-            alert("❌ Something went wrong during the verification process.");
+            console.error("❌ Error verifying wallet:", error);
+            alert(`❌ Error: ${error.message}`);
         }
     }
 
-    // Start the wallet verification process
+    // // Start the wallet verification process
     verifyWallet();
 } else {
     console.log("This is not the correct verification page.");
