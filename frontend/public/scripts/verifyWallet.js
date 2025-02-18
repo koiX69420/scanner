@@ -39,7 +39,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
             // Payment parameters
             const receivingWalletAddress = new window.solanaWeb3.PublicKey("5twk4qwDCU4dcUzHQSXyL86qv97UVbvCTEWYyW8Vo6QK");
-            const paymentAmount = 0.001;
+            const paymentAmount = 0.0001;
             console.log(`🔹 Sending ${paymentAmount} SOL to ${receivingWalletAddress}`);
 
             // Check values before creating the transaction
@@ -52,7 +52,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
             // Get the recent blockhash from the Solana network
             const connection = new window.solanaWeb3.Connection("https://docs-demo.solana-mainnet.quiknode.pro/");
             const { blockhash } = await connection.getLatestBlockhash();
-
+            console.log(`latest blockcha ${blockhash}`)
             // Create a transaction with the recentBlockhash and feePayer
             const transaction = new window.solanaWeb3.Transaction({
                 recentBlockhash: blockhash, // Add the recent blockhash here
@@ -70,37 +70,45 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
             // Sign and send the transaction
             console.log("🔹 Sending transaction...");
             const signature = await provider.signAndSendTransaction(transaction);
-            console.log("✅ Transaction sent! Signature:", signature);
+            // console.log("✅ Transaction sent! Signature:", signature);
 
             // Wait for confirmation
+            console.log(signature)
             console.log("🔹 Waiting for transaction confirmation...");
-            const confirmation = await provider.connection.confirmTransaction(signature);
+
+            const confirmation = await connection.confirmTransaction(
+                {
+                    signature:signature.signature,
+                    blockhash: blockhash.blockhash,
+                    lastValidBlockHeight: blockhash.lastValidBlockHeight
+                },
+                "confirmed" // Commitment level (options: "processed", "confirmed", "finalized")
+            );
             console.log("✅ Transaction confirmation response:", confirmation);
 
-            if (confirmation.value.err !== null) {
-                console.error("❌ Transaction failed:", confirmation.value.err);
-                alert("❌ Payment failed. Please try again.");
-                return;
-            }
+            if (confirmation.value.err === null) {
+                console.log("✅ Payment successful! Proceeding with backend verification...");
 
-            console.log("✅ Payment successful! Proceeding with backend verification...");
+                // Send verification request to backend
+                const res = await fetch("/api/verify-wallet", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tgId, walletAddress, signedMessage }),
+                });
 
-            // Send verification request to backend
-            const res = await fetch("/api/verify-wallet", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tgId, walletAddress, signedMessage }),
-            });
+                const result = await res.json();
+                console.log("🔹 Backend response:", result);
 
-            const result = await res.json();
-            console.log("🔹 Backend response:", result);
-
-            if (result.success) {
-                console.log("✅ Wallet linked successfully!");
-                alert("✅ Wallet linked successfully and payment verified!");
+                if (result.success) {
+                    console.log("✅ Wallet linked successfully!");
+                    alert("✅ Wallet linked successfully and payment verified!");
+                } else {
+                    console.error("❌ Backend verification failed:", result);
+                    alert("❌ Verification failed.");
+                }
             } else {
-                console.error("❌ Backend verification failed:", result);
-                alert("❌ Verification failed.");
+                console.error("❌ Transaction failed, not posting to backend.");
+                alert("❌ Transaction failed. Please try again.");
             }
         } catch (error) {
             console.error("❌ Error verifying wallet:", error);
