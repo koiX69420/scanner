@@ -101,7 +101,7 @@ function formatDexUpdates(dexPay) {
                         "❌"; // cancelled
 
       return `  ${statusEmoji} ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`;
-    }).join("\n") + "\n";
+    }).join("\n") + "\n\n";
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
