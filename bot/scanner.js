@@ -224,10 +224,10 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 
 
 
-  message += generateBuyOptions(dexSocials,tokenAddress);
   message += formatDexUpdates(dexPay);
+  message += generateBuyOptions(dexSocials,tokenAddress);
 
-  return message + "\n";
+  return message;
 }
 
 function generateBuyOptions(dexSocials, tokenAddress) {
