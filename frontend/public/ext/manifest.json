@@ -8,7 +8,8 @@
   },
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "https://mandog.fun/",
@@ -23,7 +24,9 @@
         "https://photon-sol.tinyastro.io/*",
         "https://bullx.io/*",
         "https://pump.fun/coin/*",
-        "https://axiom.trade/*"
+        "https://axiom.trade/*",
+        "http://localhost:5000/*",
+        "https://mandog.fun/*"
       ],
       "js": [
         "content.js"

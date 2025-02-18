@@ -24,64 +24,64 @@ body {
     height: 100vh;
 }
 
+/* Main container to hold all content */
 .main-container {
     width: 400px;
-    height: 600px;
+    height: auto;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Heading */
 h2 {
     color: var(--primary-color);
-    font-size: 18px;
+    font-size: 22px;
     text-align: center;
+    margin-bottom: var(--spacing);
 }
 
-/* Ensure input-container & result have the same width */
-.input-container, #result {
-    width: 100%;
-    box-sizing: border-box; /* Ensures padding doesn't affect width */
-    padding: var(--spacing);
-    background-color: var(--result-bg);
-
-}
-
-/* Input + Button Container */
-.input-container {
-    display: flex;
-    gap: var(--spacing);
-}
-
-#tokenAddress {
-    flex: 1;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--input-bg);
+/* Description text for wallet connection */
+p {
     color: var(--text-color);
-    padding: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    margin-bottom: var(--spacing);
 }
 
-#scanButton {
-    width: 70px;
-    padding: 10px 20px;
-
+/* Connect Wallet Button */
+#connectWallet {
     background-color: var(--button-bg);
     color: white;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
     border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
-    display: inline-block; /* Ensure button is inline */
-
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-bottom: var(--spacing);
 }
 
-/* Result Box (Matches input-container width) */
-#result {
-    padding: 15px;
-    border-radius: var(--border-radius);
-    font-size: 14px;
-    line-height: 1.6;
-    margin-top: var(--spacing);
-    min-height: 50px;
+#connectWallet:hover {
+    background-color: #27ae60;
+    transform: scale(1.05);
 }
 
+/* Status message */
+#status {
+    margin-top: 20px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #34495e;
+    text-align: center;
+}
 
 /* Links */
 a {
@@ -153,6 +153,7 @@ br {
     height: 150px;
 }
 
+/* Footer Style */
 footer {
     position: fixed;
     bottom: 0;
@@ -168,7 +169,7 @@ footer {
     justify-content: flex-start; /* Align text to the left */
 }
 
-
+/* Copyable Text Style */
 .copyable {
     cursor: pointer;
     position: relative;
@@ -225,5 +226,3 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
     background-color: #03a89c; /* Slightly darker shade for the thumb when hovered */
 }
-
-

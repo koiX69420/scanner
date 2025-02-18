@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Respond back to content.js
         sendResponse({ success: true, receivedToken: message.token });
         chrome.tabs.create({
-            url: chrome.runtime.getURL(`index.html?token=${message.token}`)
+            url: chrome.runtime.getURL(`popup.html?token=${message.token}`)
         });
         return true; // Important for async responses
     }
