@@ -35,18 +35,18 @@ const {
 
 
 
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devTokenAccounts, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
-  
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devTokenAccounts);
+
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   if (!isSummary) {
-    message += generateTop20Holders(top20Data, clusterPercentages,metadata);
+    message += generateTop20Holders(top20Data, clusterPercentages, metadata);
     message += generateTooltip();
   }
-  
+
   return message;
 }
 
@@ -70,7 +70,7 @@ function analyzeWallets(top20Data, clusterPercentages) {
   let freshWallets = new Set(), bundledWallets = new Set();
   let holdingAmount = 0
   top20Data.forEach(holder => {
-    holdingAmount+=parseFloat(holder["Current Holding (%)"]);
+    holdingAmount += parseFloat(holder["Current Holding (%)"]);
     if (parseFloat(holder["Total Sold (%)"]) > 0) sellingWallets++;
     if (holder["Total Buys"] === 0) zeroBuyWallets++;
     if (holder["Transaction Count"] < 10) freshWallets.add(holder.Address);
@@ -83,37 +83,37 @@ function analyzeWallets(top20Data, clusterPercentages) {
       }
     });
   });
-  
+
   const bundledFreshWallets = [...bundledWallets].filter(wallet => freshWallets.has(wallet)).length;
   const freshNotBundled = [...freshWallets].filter(wallet => !bundledWallets.has(wallet)).length;
-  
-  return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled,holdingAmount };
+
+  return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled, holdingAmount };
 }
 function formatDexUpdates(dexPay) {
   if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
 
   console.log(dexPay);
 
-  return `🦅 *Dexscreener Updates*\n` + 
+  return `🦅 *Dexscreener Updates*\n` +
     dexPay.map(order => {
-      let statusEmoji = order.status === "approved" ? "✅" : 
-                        order.status === "processing" ? "⏳" : 
-                        "❌"; // cancelled
+      let statusEmoji = order.status === "approved" ? "✅" :
+        order.status === "processing" ? "⏳" :
+          "❌"; // cancelled
 
       return `  ${statusEmoji} ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`;
     }).join("\n") + "\n\n";
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
-  const { socials, isBonded, totalVolume,priceChange } = extractSocialLinks(metadata, dexSocials);
-  
-  const formattedVolume = `💰 Vol. USD: _24h_:*${formatMarketCap(totalVolume.h24,0)}*  | _1h_:*${formatMarketCap(totalVolume.h1,0)}*  | _5m_:*${formatMarketCap(totalVolume.m5,0)}* `;
-  const formattedPriceChange = `💹 Chg. %: _24h_:*${formatMarketCap(priceChange.h24,0)}*  | _1h_:*${formatMarketCap(priceChange.h1,0)}*  | _5m_:*${formatMarketCap(priceChange.m5,0)}* `;
+  const { socials, isBonded, totalVolume, priceChange } = extractSocialLinks(metadata, dexSocials);
+
+  const formattedVolume = `💰 Vol. USD: _24h_:*${formatMarketCap(totalVolume.h24, 0)}*  | _1h_:*${formatMarketCap(totalVolume.h1, 0)}*  | _5m_:*${formatMarketCap(totalVolume.m5, 0)}* `;
+  const formattedPriceChange = `💹 Chg. %: _24h_:*${formatMarketCap(priceChange.h24, 0)}*  | _1h_:*${formatMarketCap(priceChange.h1, 0)}*  | _5m_:*${formatMarketCap(priceChange.m5, 0)}* `;
 
   return `🗣️ ${Object.values(socials).filter(Boolean).join(" | ")} | [Dex](https://dexscreener.com/solana/${tokenAddress})\n` +
-         `${formattedVolume}\n` +
-         `${formattedPriceChange}\n` +
-         (isBonded ? "🪢 Bonded\n\n" : "\n");
+    `${formattedVolume}\n` +
+    `${formattedPriceChange}\n` +
+    (isBonded ? "🪢 Bonded\n\n" : "\n");
 }
 
 function extractSocialLinks(metadata, dexSocials) {
@@ -160,7 +160,7 @@ function extractSocialLinks(metadata, dexSocials) {
     }
   });
 
-  return { socials, isBonded,totalVolume,priceChange };
+  return { socials, isBonded, totalVolume, priceChange };
 }
 
 function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {
@@ -172,7 +172,7 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages,devTokenAccounts) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts) {
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})`;
   if (metadata.market_cap) {
     message += ` *(${formatMarketCap(metadata.market_cap)} MC)*`;
@@ -180,11 +180,11 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 
   let devHolds = "(0.00%)";
-  
+
   if (metadata.supply) {
     // Find the developer's token account holding the token
     const devTokenAccount = devTokenAccounts.find(acc => acc.token_address === tokenAddress);
-    
+
     if (devTokenAccount) {
       devHolds = `(${((devTokenAccount.amount / metadata.supply) * 100).toFixed(2)}%)`;
     }
@@ -193,39 +193,39 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   if (metadata.creator) {
     message += `🛠️ *Deployer ${devHolds}*\n\`${metadata.creator}\`\n`;
   }
-  
+
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   message += formatSocials(metadata, dexSocials, tokenAddress);
-  
+
   // Guard against undefined tokenHistory
   message += `🏷️ *Previous Tokens Created: *`;
 
   if (tokenHistory && tokenHistory.length > 1) {
     message += `${tokenHistory.length - 1}\n`;
-  
+
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
-    
+
     sortedTokens.forEach(token => {
       if (token.metadata?.address && token.metadata.address !== tokenAddress) {
         const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
         message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
       }
     });
-  
+
     message += "\n";
-  }else{
+  } else {
     message += "0\n";
 
   }
   message += "\n";
-  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled,holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
-  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets,holdingAmount);
+  const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled, holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);
   // Add the buy options links
 
 
 
   message += formatDexUpdates(dexPay);
-  message += generateBuyOptions(dexSocials,tokenAddress);
+  message += generateBuyOptions(dexSocials, tokenAddress);
 
   return message;
 }
@@ -239,30 +239,31 @@ function generateBuyOptions(dexSocials, tokenAddress) {
   const axiomPoolId = raydiumPool ? raydiumPool.pool_id : pumpfunPool ? pumpfunPool.pool_id : null;
 
   // Define exchanges and their links
-  const exchanges = {
-      "Photon": `https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}`,
-      "BullX": `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}`,
-      "Bonk": `https://t.me/bonkbot_bot?start=ref_1g9xb_ca_${tokenAddress}`,
-      "Banana": `https://t.me/BananaGun_bot?start=snp_rickburpbot_${tokenAddress}`,
-      "Trojan": `https://t.me/paris_trojanbot?start=d-RickBot-${tokenAddress}`,
-      "Bloom": `https://t.me/BloomSolanaEU2_bot?start=ref_RickBot_ca_${tokenAddress}`,
-      "GMGN": `https://gmgn.ai/sol/token/${tokenAddress}`,
-      "PepeBoost": `https://t.me/pepeboost_sol_bot?start=ref_0xRick_ca_${tokenAddress}`,
-      "Shuriken": `https://t.me/ShurikenTradeBot?start=qt-RickSanchez-${tokenAddress}`
-  };
+  const exchanges = [
+    ["Photon", `https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}`],
+    ["BullX", `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}`]
+  ];
 
-  // If a valid pool ID exists for Axiom, add it
+  // Insert Axiom between BullX and Bonk if pool ID exists
   if (axiomPoolId) {
-      exchanges["Axiom"] = `https://axiom.trade/meme/${axiomPoolId}`;
+    exchanges.push(["Axiom", `https://axiom.trade/meme/${axiomPoolId}`]);
   }
 
-  // Construct the buy options string
-  return Object.entries(exchanges)
-      .map(([name, url]) => `[${name}](${url})`)
-      .join(" | ") + "\n\n";
+  exchanges.push(
+    ["Bonk", `https://t.me/bonkbot_bot?start=ref_1g9xb_ca_${tokenAddress}`],
+    ["Banana", `https://t.me/BananaGun_bot?start=snp_rickburpbot_${tokenAddress}`],
+    ["Trojan", `https://t.me/paris_trojanbot?start=d-RickBot-${tokenAddress}`],
+    ["Bloom", `https://t.me/BloomSolanaEU2_bot?start=ref_RickBot_ca_${tokenAddress}`],
+    ["GMGN", `https://gmgn.ai/sol/token/${tokenAddress}`],
+    ["PepeBoost", `https://t.me/pepeboost_sol_bot?start=ref_0xRick_ca_${tokenAddress}`],
+    ["Shuriken", `https://t.me/ShurikenTradeBot?start=qt-RickSanchez-${tokenAddress}`]
+  );
+
+  return exchanges.map(([name, url]) => `[${name}](${url})`).join(" | ") + "\n\n";
+
 }
 // Generates the Top 20 Holders section
-function generateTop20Holders(holdersData, clusterPercentages,metadata) {
+function generateTop20Holders(holdersData, clusterPercentages, metadata) {
   let top20Mfers = "\n🔎 *Top 20 Mfers*\n";
 
   holdersData.forEach((holder, index) => {
@@ -290,8 +291,8 @@ function generateTop20Holders(holdersData, clusterPercentages,metadata) {
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
     const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
     let isDev = ""
-    if(metadata.creator){
-      if(holder.Address===metadata.creator) isDev = `*(dev)*`;
+    if (metadata.creator) {
+      if (holder.Address === metadata.creator) isDev = `*(dev)*`;
     }
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${isDev}${alertEmoji}${freshEmoji}${clusterInfo}\n`;
     top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
@@ -382,15 +383,15 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const cacheKey = `${tokenAddress}_${isSummary}`; // Unique key for each token
   const now = Date.now();
 
-    // Check if cache exists and is still valid (30s TTL)
-    if (cache.has(cacheKey)) {
-      const { timestamp, data } = cache.get(cacheKey);
-      if (now - timestamp < 30000) { // 30 seconds
-        console.log("Returning cached data");
-        availableApiCalls+=API_CALLS_PER_REQUEST;
-        return data; // Return cached response
-      }
+  // Check if cache exists and is still valid (30s TTL)
+  if (cache.has(cacheKey)) {
+    const { timestamp, data } = cache.get(cacheKey);
+    if (now - timestamp < 30000) { // 30 seconds
+      console.log("Returning cached data");
+      availableApiCalls += API_CALLS_PER_REQUEST;
+      return data; // Return cached response
     }
+  }
 
   const timeLabel = `generateTokenMessage_${tokenAddress}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
   console.time(timeLabel); // Start the timer with a unique label
@@ -406,7 +407,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const devTokenAccountsPromise = fetchTokenAccounts(metadata.creator)
 
   // Wait for all the independent data to finish fetching
-  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory,devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise,devTokenAccountsPromise]);
+  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory, devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise, devTokenAccountsPromise]);
   const pumpfun = await getPumpFunWallet(pools)
 
   const moreHolderData = pumpfun.pool_id
@@ -418,7 +419,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   // Fetch Dex Socials (which also can run in parallel)
   const dexSocials = await fetchDexSocials(pools);
   // Format the message based on all the fetched data
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials,devTokenAccounts, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, isSummary);
 
   console.log("Sent message");
 
