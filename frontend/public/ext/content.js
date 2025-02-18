@@ -17,7 +17,7 @@ window.addEventListener("message", (event) => {
                 chrome.storage.local.remove("walletPublicKey", () => {
                     console.log("Public key removed from storage after 1 day.");
                 });
-            }, 86400000);
+            }, 20000);
         });
     }
 });

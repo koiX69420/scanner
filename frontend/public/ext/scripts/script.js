@@ -44,7 +44,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
-    if(typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
+    // Retrieve the public key from chrome storage
+    chrome.storage.local.get("walletPublicKey", (result) => {
+        if (!result.walletPublicKey) {
+            resultDiv.innerHTML = "❌ Wallet is not connected. Please connect your wallet.";
+            return;  // Don't proceed if no wallet is connected
+        }
+    });
+    if (typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
     console.log(tokenAddress)
     const resultDiv = document.getElementById("result");
     // Validate Solana address
@@ -89,9 +96,9 @@ function convertTelegramTextToHTML(text) {
         .replace(/\n/g, "<br>"); // New lines to HTML
 }
 
-document.getElementById("tokenAddress").addEventListener("keypress", function(event) {
+document.getElementById("tokenAddress").addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
-        event.preventDefault(); 
+        event.preventDefault();
         triggerAnimation();
         fetchTokenData();
     }
@@ -134,7 +141,7 @@ function showCopyFeedback(element) {
 }
 
 // Event delegation for dynamically added `.copyable` elements
-document.addEventListener("click", function(event) {
+document.addEventListener("click", function (event) {
     const copyable = event.target.closest(".copyable");
     if (copyable) {
         const codeElement = copyable.querySelector("code");
