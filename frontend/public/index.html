@@ -12,17 +12,16 @@
 
     <div class = "main-container">
         <h2>Mandog Trench Tools</h2>
-        <div class="input-container">
-            <input type="text" id="tokenAddress" placeholder="Enter Solana Token Address">
-            <button id="scanButton">Scan</button>
-        </div>
+        <!-- Phantom Wallet Login Button -->
+        <button id="connectWallet">Connect Phantom Wallet</button>
         
-        <div id="result"></div>
+        <!-- Display Wallet Address -->
+        <p id="status">Not connected</p>
     </div>
     <footer>
         <p>&copy; Mandog Trench Tools | <a href="https://mandog.fun/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></p>
     </footer>
-    <script src="ext/scripts/script.js"></script> <!-- Move JS logic to an external file -->
     <script src="scripts/verifyWallet.js"></script> <!-- Move JS logic to an external file -->
+    <script src="scripts/connect.js"></script> <!-- Move JS logic to an external file -->
 </body>
 </html>
