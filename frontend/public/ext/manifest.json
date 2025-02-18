@@ -25,7 +25,8 @@
         "https://bullx.io/*",
         "https://pump.fun/coin/*",
         "https://axiom.trade/*",
-        "http://localhost:5000/"
+        "http://localhost:5000/*",
+        "https://mandog.fun/*"
       ],
       "js": [
         "content.js"

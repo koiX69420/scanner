@@ -222,25 +222,45 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets,holdingAmount);
   // Add the buy options links
 
-  const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
-  const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
-  let buyOptions = `[Photon](https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}) | [BullX](https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress})`;
 
-  // If a raydium pool is found, add the AXI link
-  if (raydiumPool && raydiumPool.pool_id !== 'N/A') {
-    buyOptions += ` | [Axiom](https://axiom.trade/meme/${raydiumPool.pool_id})`;
-  }
-  // If no raydium pool is found, but pumpfun pool exists, use pumpfun's pool_id for AXI link
-  else if (pumpfunPool && pumpfunPool.pool_id !== 'N/A') {
-    buyOptions += ` | [Axiom](https://axiom.trade/meme/${pumpfunPool.pool_id})`;
-  }
 
-  message += buyOptions+"\n\n";
+  message += generateBuyOptions(dexSocials,tokenAddress);
   message += formatDexUpdates(dexPay);
 
   return message + "\n";
 }
 
+function generateBuyOptions(dexSocials, tokenAddress) {
+  // Find Raydium and Pumpfun pools
+  const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium' && pool.pool_id !== 'N/A');
+  const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun' && pool.pool_id !== 'N/A');
+
+  // Determine which pool ID to use for Axiom
+  const axiomPoolId = raydiumPool ? raydiumPool.pool_id : pumpfunPool ? pumpfunPool.pool_id : null;
+
+  // Define exchanges and their links
+  const exchanges = {
+      "Photon": `https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}`,
+      "BullX": `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}`,
+      "Bonk": `https://t.me/bonkbot_bot?start=ref_1g9xb_ca_${tokenAddress}`,
+      "Banana": `https://t.me/BananaGun_bot?start=snp_rickburpbot_${tokenAddress}`,
+      "Trojan": `https://t.me/paris_trojanbot?start=d-RickBot-${tokenAddress}`,
+      "Bloom": `https://t.me/BloomSolanaEU2_bot?start=ref_RickBot_ca_${tokenAddress}`,
+      "GMGN": `https://gmgn.ai/sol/token/${tokenAddress}`,
+      "PepeBoost": `https://t.me/pepeboost_sol_bot?start=ref_0xRick_ca_${tokenAddress}`,
+      "Shuriken": `https://t.me/ShurikenTradeBot?start=qt-RickSanchez-${tokenAddress}`
+  };
+
+  // If a valid pool ID exists for Axiom, add it
+  if (axiomPoolId) {
+      exchanges["Axiom"] = `https://axiom.trade/meme/${axiomPoolId}`;
+  }
+
+  // Construct the buy options string
+  return Object.entries(exchanges)
+      .map(([name, url]) => `[${name}](${url})`)
+      .join(" | ") + "\n\n";
+}
 // Generates the Top 20 Holders section
 function generateTop20Holders(holdersData, clusterPercentages,metadata) {
   let top20Mfers = "\n🔎 *Top 20 Mfers*\n";
