@@ -91,8 +91,17 @@ function analyzeWallets(top20Data, clusterPercentages) {
 }
 function formatDexUpdates(dexPay) {
   if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
-  
-  return `🦅 *Dexscreener Updates*\n` + dexPay.map(order => `  • ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`).join("\n") + "\n";
+
+  console.log(dexPay);
+
+  return `🦅 *Dexscreener Updates*\n` + 
+    dexPay.map(order => {
+      let statusEmoji = order.status === "approved" ? "✅" : 
+                        order.status === "processing" ? "⏳" : 
+                        "❌"; // cancelled
+
+      return `  ${statusEmoji} ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`;
+    }).join("\n") + "\n";
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
@@ -211,7 +220,22 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += "\n";
   const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled,holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
   message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets,holdingAmount);
-  
+  // Add the buy options links
+
+  const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
+  const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
+  let buyOptions = `[Photon](https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}) | [BullX](https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress})`;
+
+  // If a raydium pool is found, add the AXI link
+  if (raydiumPool && raydiumPool.pool_id !== 'N/A') {
+    buyOptions += ` | [Axiom](https://axiom.trade/meme/${raydiumPool.pool_id})`;
+  }
+  // If no raydium pool is found, but pumpfun pool exists, use pumpfun's pool_id for AXI link
+  else if (pumpfunPool && pumpfunPool.pool_id !== 'N/A') {
+    buyOptions += ` | [Axiom](https://axiom.trade/meme/${pumpfunPool.pool_id})`;
+  }
+
+  message += buyOptions+"\n\n";
   message += formatDexUpdates(dexPay);
 
   return message + "\n";
