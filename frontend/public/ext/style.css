@@ -34,7 +34,22 @@ h2 {
     font-size: 18px;
     text-align: center;
 }
-
+#walletAddress {
+    background-color: #0A1627; /* Dark background for contrast */
+    color: #03DAC6; /* Solana's accent color */
+    padding: 15px;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+    width: 90%;
+    max-width: 350px;
+    margin: 0 auto;
+}
 /* Ensure input-container & result have the same width */
 .input-container, #result {
     width: 100%;

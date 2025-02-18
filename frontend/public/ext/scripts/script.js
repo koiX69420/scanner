@@ -15,6 +15,33 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// Wait for the page to load completely
+window.addEventListener('DOMContentLoaded', () => {
+    console.log("trying to get key");
+
+    // Get the existing walletAddress div and other elements
+    const walletAddressDiv = document.getElementById("walletAddress");
+    const inputContainer = document.querySelector('.input-container');
+    const resultDiv = document.getElementById("result");
+
+    // Retrieve the public key from chrome storage
+    chrome.storage.local.get("walletPublicKey", (result) => {
+        if (result.walletPublicKey) {
+            // If a wallet public key is available, display it and show input and result sections
+            walletAddressDiv.textContent = `Connected: ${result.walletPublicKey}`;
+            inputContainer.style.display = 'flex';  // Show input container
+            resultDiv.style.display = 'block';     // Show result div
+        } else {
+            // If no wallet is connected, update the message and hide input and result sections
+            walletAddressDiv.innerHTML = "No wallet connected yet. <br> Please visit <a href='https://mandog.fun' target='_blank'>mandog.fun</a> to connect your wallet.";
+            inputContainer.style.display = 'none'; // Hide input container
+            resultDiv.style.display = 'none';      // Hide result div
+        }
+    });
+});
+
+
+
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
     if(typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
