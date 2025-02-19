@@ -226,11 +226,14 @@ if (metadata.market_cap) {
 
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
 
-    sortedTokens.forEach(token => {
-      if (token.metadata?.address && token.metadata.address !== tokenAddress) {
-        const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
-        message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
-      }
+    // Only add the first 10 tokens
+    const topTokens = sortedTokens.slice(0, 10);
+
+    topTokens.forEach(token => {
+        if (token.metadata?.address && token.metadata.address !== tokenAddress) {
+            const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
+            message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
+        }
     });
 
     message += "\n";

@@ -16,8 +16,6 @@ async function fetchAth(tokenAddress,created_time) {
         // Fetch data from Birdeye API
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log(data)
-        console.log(url)
         if (data.success) {
             // Find the all-time high (max value) from the items array
             const allTimeHigh = data.data.items.reduce((max, item) => {
