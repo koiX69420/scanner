@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS validated_users (
     id SERIAL PRIMARY KEY,                       -- Auto-incremented user ID
     tg_id BIGINT NOT NULL,                       -- Telegram ID (e.g., numeric identifier)
     wallet_address TEXT NOT NULL,                -- Wallet address (e.g., Solana wallet address)
-    signed_message BYTEA NOT NULL,               -- Signed message (can store it as binary data)
     validation_timestamp TIMESTAMPTZ DEFAULT NOW(),  -- Timestamp of when the validation happened
     last_updated TIMESTAMPTZ DEFAULT NOW(),      -- Timestamp of when the record was last updated
     UNIQUE(wallet_address),                      -- Ensure Wallet address is unique

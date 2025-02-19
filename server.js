@@ -70,16 +70,15 @@ app.post("/api/verify-wallet", async (req, res) => {
 
       // UPSERT: Insert new user if they don't exist, or update the existing one
       const userUpsertQuery = `
-        INSERT INTO validated_users (wallet_address, tg_id, signed_message, last_updated)
+        INSERT INTO validated_users (wallet_address, tg_id, last_updated)
         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
         ON CONFLICT (wallet_address) DO UPDATE
         SET tg_id = EXCLUDED.tg_id,
-            signed_message = EXCLUDED.signed_message,
             last_updated = CURRENT_TIMESTAMP
         RETURNING id;  -- Return the ID of the inserted or updated user
       `;
 
-      const values = [walletAddress, tgId, signedMessage.signature.data];
+      const values = [walletAddress, tgId];
 
       // Execute the upsert query
       const result = await pool.query(userUpsertQuery, values);
