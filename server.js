@@ -55,9 +55,6 @@ app.post("/api/token-message", async (req, res) => {
 
 app.post("/api/verify-wallet", async (req, res) => {
   const { tgId, walletAddress, signedMessage } = req.body;
-  console.log(tgId)
-  console.log(walletAddress)
-  console.log(signedMessage)
   // Reconstruct the original message
   const message = `Sign this message to verify ownership of this wallet for Telegram ID: ${tgId}`;
   const encodedMessage = new TextEncoder().encode(message);
@@ -70,7 +67,6 @@ app.post("/api/verify-wallet", async (req, res) => {
     const isValid = nacl.sign.detached.verify(encodedMessage, signature, publicKey.toBuffer());
 
     if (isValid) {
-      console.log("Signature is valid");
 
       // UPSERT: Insert new user if they don't exist, or update the existing one
       const userUpsertQuery = `
@@ -90,8 +86,6 @@ app.post("/api/verify-wallet", async (req, res) => {
       
       // The ID of the newly inserted user
       const userId = result.rows[0].id;
-
-      console.log(`User inserted with ID: ${userId}`);
 
       return res.json({ success: true, wallet: walletAddress, userId });
     } else {

@@ -92,8 +92,6 @@ function analyzeWallets(top20Data, clusterPercentages) {
 function formatDexUpdates(dexPay) {
   if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
 
-  console.log(dexPay);
-
   return `🦅 *Dexscreener Updates*\n` +
     dexPay.map(order => {
       let statusEmoji = order.status === "approved" ? "✅" :

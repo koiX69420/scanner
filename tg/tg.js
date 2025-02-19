@@ -2,7 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 const bot = new TelegramBot(process.env.TG_BOT_TOKEN, { polling: true });
 bot.setMyCommands([
-    { command: "verify", description: "Get top holder wallet freshness and holdings with /fresh ca" }
+    { command: "verify", description: "Verify to get access to the Mandog Trench Tools chrome extension." }
   ]);
 
 bot.onText(/\/start/, (msg) => {
