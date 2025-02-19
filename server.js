@@ -163,7 +163,6 @@ app.get("/api/check-tgid", async (req, res) => {
   if (!tgId) {
       return res.status(400).json({ success: false, error: "Missing Telegram ID" });
   }
-  console.log("yoyoyoyo")
 
   try {
       const result = await pool.query(

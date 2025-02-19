@@ -18,15 +18,33 @@ bot.onText(/\/start/, (msg) => {
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
 });
 
-bot.onText(/\/verify/, (msg) => {
-  console.log(msg)
+bot.onText(/\/verify/, async (msg) => {
   const chatId = msg.chat.id;
   const tgId = msg.from.id; // Get Telegram user ID
-  const verifyLink = `localhost:5000/verify?tgId=${tgId}`;
 
+  try {
+    // Check if tgId is already verified
+    const response = await fetch(`http://localhost:5000/api/check-tgid?tgId=${tgId}`);
+    const data = await response.json();
 
-  bot.sendMessage(chatId, verifyLink, 
-    { parse_mode: "Markdown"});
-
+    if (data.success) {
+      // User is already verified
+      bot.sendMessage(
+        chatId,
+        `✅ You are already verified! Your verification is valid for another ${data.daysLeft} days.`
+      );
+    } else {
+      // User is not verified, send verification link
+      const verifyLink = `https://mandog.fun/verify?tgId=${tgId}`;
+      bot.sendMessage(
+        chatId,
+        `🔹 Click the link below to verify your wallet:\n\n${verifyLink}`,
+        { parse_mode: "Markdown" }
+      );
+    }
+  } catch (error) {
+    console.error("Error checking Telegram ID verification:", error);
+    bot.sendMessage(chatId, "❌ An error occurred while checking your verification status. Please try again later.");
+  }
 });
 module.exports = bot;
