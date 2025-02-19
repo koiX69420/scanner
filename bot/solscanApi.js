@@ -169,6 +169,7 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
 
 async function getFundingMap(topHolders) {
   const fundingMap = {}; // Map to group funding wallets for clustering
+  const recipientFunding = new Map(); // Tracks recipient -> { sender, count }
 
   const batchSize = 10; // Adjust based on API limits and network conditions
   const batches = [];
@@ -205,11 +206,19 @@ async function getFundingMap(topHolders) {
             fundingMap[sender] = new Set();
           }
           fundingMap[sender].add(holder); // Add holder to sender's list
+
+          // Track which sender provided funds to each recipient
+          if (!recipientFunding.has(recipient) || recipientFunding.get(recipient).count < solTransactions.length) {
+            recipientFunding.set(recipient, { sender, count: solTransactions.length });
+          }
         }
       });
     });
   });
-
+  // **Filtering Step: Remove recipients appearing in multiple senders**
+  Object.keys(fundingMap).forEach(sender => {
+    fundingMap[sender] = new Set([...fundingMap[sender]].filter(holder => recipientFunding.get(holder).sender === sender));
+  });
   return fundingMap;
 }
 // Fetch transactions for a batch of holders
