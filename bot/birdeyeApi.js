@@ -23,7 +23,7 @@ async function fetchAth(tokenAddress,created_time) {
                 return item.value > max ? item.value : max;
             }, 0);
 
-            return { allTimeHigh: 0};
+            return { allTimeHigh };
         } else {
             throw new Error("Failed to fetch data from Birdeye API.");
         }
