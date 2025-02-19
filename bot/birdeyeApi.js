@@ -49,9 +49,11 @@ function getGranularityType(created_time) {
     const THIRTY_DAYS = 30 * ONE_DAY;  // 30 days = 2592000 seconds
 
     // Decide granularity based on the time difference
-    if (timeDiff <= SEVEN_DAYS) {
-        return "15m";   // 15 minutes for the most recent data
-    }   else if (timeDiff <= THIRTY_DAYS) {
+    if (timeDiff <= ONE_DAY) {
+        return "5m";   // 15 minutes for the most recent data
+    }else if (timeDiff <= SEVEN_DAYS) {
+        return "15m";    // 6 hours for tokens created within the last 30 days
+    } else if (timeDiff <= THIRTY_DAYS) {
         return "1H";    // 6 hours for tokens created within the last 30 days
     } else if (timeDiff <= 2 * THIRTY_DAYS) {
         return "12H";   // 12 hours for tokens older than 30 days, up to 90 days
