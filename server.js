@@ -160,7 +160,7 @@ app.get("/api/check-tgid", async (req, res) => {
 
   try {
       const result = await pool.query(
-          `SELECT last_updated FROM validated_users WHERE tg_id = $1`,
+          `SELECT last_updated,wallet_address FROM validated_users WHERE tg_id = $1`,
           [tgId]
       );
 
@@ -175,7 +175,8 @@ app.get("/api/check-tgid", async (req, res) => {
       return res.json({
           success: daysSinceUpdate < 30, 
           last_updated: result.rows[0].last_updated,
-          daysLeft: 30 - daysSinceUpdate
+          daysLeft: 30 - daysSinceUpdate,
+          publicKey:result.rows[0].wallet_address
       });
   } catch (error) {
       console.error("Error checking Telegram ID validation:", error);

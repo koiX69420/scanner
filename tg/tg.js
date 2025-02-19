@@ -31,7 +31,7 @@ bot.onText(/\/verify/, async (msg) => {
       // User is already verified
       bot.sendMessage(
         chatId,
-        `✅ You are already verified! Your verification is valid for another ${data.daysLeft} days.`
+        `✅ You are already verified for the wallet ${data.publicKey}! Your verification is valid for another ${data.daysLeft} days.`
       );
     } else {
       // User is not verified, send verification link

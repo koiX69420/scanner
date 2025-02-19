@@ -31,7 +31,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
             if (daysLeft > 0) {
                 console.log(`✅ Wallet is already verified! (${daysLeft} days remaining)`);
-                document.getElementById("status").textContent = `TG User ${tgId} is already validated! (${daysLeft} days remaining)`;
+                document.getElementById("status").textContent = `TG User ${tgId} is already validated with the wallet: ${validationData.publicKey} (${daysLeft} days remaining)`;
 
                 return;
             }
