@@ -119,7 +119,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
                 if (result.success) {
                     console.log("✅ Wallet linked successfully!");
-                    alert("✅ Wallet linked successfully and payment verified!");
+                    document.getElementById("status").textContent = `✅ Payment successful!\nTG User ${tgId} has validated for the wallet: ${walletAddress}`;
                 } else {
                     console.error("❌ Backend verification failed:", result);
                     alert("❌ Verification failed.");
