@@ -28,6 +28,10 @@ const {
 } = require('./dexScreenerApi');
 
 const {
+  fetchAth
+} = require('./birdeyeApi');
+
+const {
   calculateClusterPercentages,
   formatMarketCap,
   formatTimestamp
@@ -35,12 +39,12 @@ const {
 
 
 
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary = false) {
   if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
 
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
   if (!isSummary) {
     message += generateTop20Holders(top20Data, clusterPercentages, metadata);
@@ -170,11 +174,30 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts) {
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})`;
-  if (metadata.market_cap) {
-    message += ` *(${formatMarketCap(metadata.market_cap)} MC)*`;
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath) {
+  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  
+// Check and append market cap if it exists
+if (metadata.market_cap) {
+  const currentMarketCap = formatMarketCap(metadata.market_cap);
+  let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
+
+  // Check if ath.allTimeHigh is available and non-zero
+  if (ath.allTimeHigh > 0) {
+      athMarketCap = formatMarketCap(ath.allTimeHigh * metadata.supply / 1e6);
+
+      // Calculate percentage difference between the current market cap and the all-time high market cap
+      const marketCapDifference = ((metadata.market_cap - (ath.allTimeHigh * metadata.supply / 1e6)) / (ath.allTimeHigh * metadata.supply / 1e6)) * 100;
+      const percentageDifference = marketCapDifference.toFixed(2);
+
+      // Add market cap information in a visually appealing way
+      message += ` *${currentMarketCap}* MC | ATH: *${athMarketCap}* MC | *${percentageDifference}*%`;
+  } else {
+      // If ATH is 0 or not available, just show the current market cap
+      message += ` *${currentMarketCap}* MC`;
   }
+}
+
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 
   let devHolds = "(0.00%)";
@@ -396,6 +419,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
+
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
@@ -403,9 +427,10 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const poolsPromise = fetchTokenMarkets(tokenAddress);
   const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
   const devTokenAccountsPromise = fetchTokenAccounts(metadata.creator)
+  const athPromise = fetchAth(tokenAddress,metadata.created_time || metadata.first_mint_time)
 
   // Wait for all the independent data to finish fetching
-  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory, devTokenAccounts] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise, devTokenAccountsPromise]);
+  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory, devTokenAccounts,ath] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise, devTokenAccountsPromise,athPromise]);
   const pumpfun = await getPumpFunWallet(pools)
 
   const moreHolderData = pumpfun.pool_id
@@ -417,7 +442,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   // Fetch Dex Socials (which also can run in parallel)
   const dexSocials = await fetchDexSocials(pools);
   // Format the message based on all the fetched data
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary);
 
   console.log("Sent message");
 
