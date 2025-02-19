@@ -18,6 +18,25 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
             return;
         }
 
+        // **Check if the wallet is already verified**
+        const validationResponse = await fetch(`/api/check-tgid?tgId=${tgId}`);
+        const validationData = await validationResponse.json();
+
+        if (validationData.success) {
+            // Calculate remaining validity days
+            const lastUpdated = new Date(validationData.last_updated);
+            const now = new Date();
+            const daysSinceUpdate = Math.floor((now - lastUpdated) / (1000 * 60 * 60 * 24));
+            const daysLeft = 30 - daysSinceUpdate;
+
+            if (daysLeft > 0) {
+                console.log(`✅ Wallet is already verified! (${daysLeft} days remaining)`);
+                document.getElementById("status").textContent = `TG User ${tgId} is already validated! (${daysLeft} days remaining)`;
+
+                return;
+            }
+        }
+
         try {
             const provider = window.solana; // Phantom or Backpack
             if (!provider) {
@@ -51,11 +70,10 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
             // Get the recent blockhash from the Solana network
             const connection = new window.solanaWeb3.Connection("https://docs-demo.solana-mainnet.quiknode.pro/");
-            const { blockhash } = await connection.getLatestBlockhash();
-            console.log(`latest blockcha ${blockhash}`)
+            const blockhash  = await connection.getLatestBlockhash();
             // Create a transaction with the recentBlockhash and feePayer
             const transaction = new window.solanaWeb3.Transaction({
-                recentBlockhash: blockhash, // Add the recent blockhash here
+                recentBlockhash: blockhash.blockhash, // Add the recent blockhash here
                 feePayer: provider.publicKey, // Set the fee payer (the wallet sending the transaction)
             }).add(
                 window.solanaWeb3.SystemProgram.transfer({

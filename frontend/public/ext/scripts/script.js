@@ -44,16 +44,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
-    // Retrieve the public key from chrome storage
-    chrome.storage.local.get("walletPublicKey", (result) => {
-        if (!result.walletPublicKey) {
-            resultDiv.innerHTML = "❌ Wallet is not connected. Please connect your wallet.";
-            return;  // Don't proceed if no wallet is connected
-        }
-    });
-    if (typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
-    console.log(tokenAddress)
+
     const resultDiv = document.getElementById("result");
+    // Get walletPublicKey from Chrome storage
+    const walletPublicKey = await getWalletPublicKey();
+    if (!walletPublicKey) {
+        resultDiv.innerHTML = "❌ Wallet is not connected. Please connect your wallet.";
+        shakeInput();
+        return;
+    }
+    if (typeof tokenAddress !== "string") tokenAddress = document.getElementById("tokenAddress").value.trim();
+
     // Validate Solana address
     if (!isValidSolanaAddress(tokenAddress)) {
         resultDiv.innerHTML = "⚠️ Invalid Solana token address.";
@@ -64,15 +65,15 @@ async function fetchTokenData(tokenAddress) {
     resultDiv.innerHTML = "⏳ Fetching data...";
 
     try {
-        const response = await fetch("https://mandog.fun/api/token-message", {
+        const response = await fetch("http://localhost:5000/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tokenAddress, isSummary: true })
+            body: JSON.stringify({ tokenAddress,walletPublicKey,isSummary: true })
         });
 
         const data = await response.json();
         if (data.error) {
-            resultDiv.innerHTML = `❌ Error: ${data.error}`;
+            resultDiv.innerHTML = `${data.error}`;
             shakeInput();
         } else {
             resultDiv.innerHTML = convertTelegramTextToHTML(data.text);
@@ -84,6 +85,15 @@ async function fetchTokenData(tokenAddress) {
 
     // Smoothly fade in results
     resultDiv.style.opacity = "1";
+}
+
+// Helper function to get walletPublicKey from Chrome storage
+function getWalletPublicKey() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get("walletPublicKey", (result) => {
+            resolve(result.walletPublicKey || null);
+        });
+    });
 }
 
 function convertTelegramTextToHTML(text) {

@@ -15,14 +15,30 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
         // Request the user to sign the message
         const signedMessage = await window.solana.signMessage(new TextEncoder().encode(message), "utf8");
 
+        // Check validation status from backend
+        const validationResponse = await fetch(`/api/check-wallet?walletPublicKey=${publicKey}`);
+        const validationData = await validationResponse.json();
+
+
         // If the user successfully signs the message, proceed to confirm and send the public key
         if (signedMessage.signature) {
-            // Update the status with the connected public key
-            document.getElementById("status").textContent = `Connected and signed: ${publicKey}`;
-
-            // Send public key to the extension via window.postMessage
-            window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey: publicKey }, "*");
-            console.log(`Sent message to window with pubkey ${publicKey}`);
+            if (validationData.success) {
+                // Calculate remaining validity days
+                const lastUpdated = new Date(validationData.last_updated);
+                const now = new Date();
+                const daysSinceUpdate = Math.floor((now - lastUpdated) / (1000 * 60 * 60 * 24));
+                const daysLeft = 30 - daysSinceUpdate;
+    
+                if (daysLeft > 0) {
+                    // Send public key to the extension via window.postMessage
+                    window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey: publicKey }, "*");
+                    console.log(`Sent message to window with pubkey ${publicKey}`);
+                    document.getElementById("status").textContent = `Connected and signed: ${publicKey}\nWallet is validated! (${daysLeft} days remaining)`;
+                    return; // No need to sign again
+                }
+            }else{
+                document.getElementById("status").innerHTML = `⛔ ${publicKey} not validated or verification expired. Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a>`;
+            }
         }
     } catch (error) {
         console.error("Error connecting or signing message:", error);
