@@ -74,8 +74,8 @@ async function fetchDexSocials(pools) {
                             label: website.label.toLowerCase(),
                             url: website.url
                         }));
-        
-                    return { pool_id: pairId, socials, websites, dexId,volume:pairData.volume,priceChange:pairData.priceChange };
+
+                    return { pool_id: pairId, socials, websites, dexId,volume:pairData.volume,priceChange:pairData.priceChange,marketCap:pairData.marketCap };
                 } catch (error) {
                     console.error(`⚠️ Error fetching data for pair ${pairId}:`, error.message);
                     return { pool_id: pairId, socials: [], websites: [] };

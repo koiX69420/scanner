@@ -34,7 +34,8 @@ const {
 const {
   calculateClusterPercentages,
   formatMarketCap,
-  formatTimestamp
+  formatTimestamp,
+  generateTooltip
 } = require('./util');
 
 
@@ -176,27 +177,34 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
 }
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath) {
   let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  let currentMarketCap = metadata.market_cap; // Default to metadata value
+  const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
+  const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
   
-// Check and append market cap if it exists
-if (metadata.market_cap) {
-  const currentMarketCap = formatMarketCap(metadata.market_cap);
-  let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
-
-  // Check if ath.allTimeHigh is available and non-zero
-  if (ath.allTimeHigh > 0) {
-      athMarketCap = formatMarketCap(ath.allTimeHigh * metadata.supply / 1e6);
-
-      // Calculate percentage difference between the current market cap and the all-time high market cap
-      const marketCapDifference = ((metadata.market_cap - (ath.allTimeHigh * metadata.supply / 1e6)) / (ath.allTimeHigh * metadata.supply / 1e6)) * 100;
-      const percentageDifference = marketCapDifference.toFixed(2);
-
-      // Add market cap information in a visually appealing way
-      message += ` *${currentMarketCap}* MC | ATH: *${athMarketCap}* MC | *${percentageDifference}*%`;
-  } else {
-      // If ATH is 0 or not available, just show the current market cap
-      message += ` *${currentMarketCap}* MC`;
+  if (raydiumPool?.marketCap) {
+    currentMarketCap = raydiumPool.marketCap;
+  } else if (pumpfunPool?.marketCap) {
+    currentMarketCap = pumpfunPool.marketCap;
   }
-}
+  
+  // Format the selected market cap
+  const formattedMarketCap = formatMarketCap(currentMarketCap);
+  let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
+  
+  // Check if ATH is available and non-zero
+  if (ath.allTimeHigh > 0) {
+    athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
+  
+    // Calculate percentage difference between the current market cap and the ATH market cap
+    const marketCapDifference = ((currentMarketCap - (ath.allTimeHigh * metadata.supply / 1e6)) / (ath.allTimeHigh * metadata.supply / 1e6)) * 100;
+    const percentageDifference = marketCapDifference.toFixed(2);
+  
+    // Add market cap information in a visually appealing way
+    message += ` *${formattedMarketCap}* MC | ATH: *${athMarketCap}* MC | *${percentageDifference}*%`;
+  } else {
+    // If ATH is 0 or not available, just show the current market cap
+    message += ` *${formattedMarketCap}* MC`;
+  }
 
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 
@@ -265,7 +273,7 @@ function generateBuyOptions(dexSocials, tokenAddress) {
   // Define exchanges and their links
   const exchanges = [
     ["Photon", `https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}`],
-    ["BullX", `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}`]
+    ["BullX", `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}&r=M7B0AY33YBS`]
   ];
 
   // Insert Axiom between BullX and Bonk if pool ID exists
@@ -325,7 +333,6 @@ function generateTop20Holders(holdersData, clusterPercentages, metadata) {
   return top20Mfers + "\n";
 }
 
-
 // Generates the Cluster Analysis section
 function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
 
@@ -368,18 +375,7 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
   return message;
 }
 
-// Generates the Tooltip section (only for the detailed report)
-function generateTooltip() {
-  let tooltip = "\n*Tooltip*\n";
-  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) \n\n`;
-  tooltip += "_🔍 What is a Sus Wallet?_\n";
-  tooltip += "⚠️ _A wallet is flagged as suspicious if:_\n";
-  tooltip += "  - _It received tokens but has 0 buys._\n";
-  tooltip += "  - _It has sold more tokens than it bought._\n";
-  tooltip += "  - _It is part of a bundle._\n";
-  tooltip += "  - _It has less than 10 defi swap transactions_ 🌿\n";
-  return tooltip;
-}
+
 
 const cache = new Map();
 
