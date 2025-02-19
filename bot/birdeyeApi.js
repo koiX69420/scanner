@@ -16,7 +16,8 @@ async function fetchAth(tokenAddress,created_time) {
         // Fetch data from Birdeye API
         const response = await fetch(url, options);
         const data = await response.json();
-
+        console.log(data)
+        console.log(url)
         if (data.success) {
             // Find the all-time high (max value) from the items array
             const allTimeHigh = data.data.items.reduce((max, item) => {
@@ -48,14 +49,12 @@ function getGranularityType(created_time) {
     const THIRTY_DAYS = 30 * ONE_DAY;  // 30 days = 2592000 seconds
 
     // Decide granularity based on the time difference
-    if (timeDiff <= ONE_DAY) {
+    if (timeDiff <= SEVEN_DAYS) {
         return "15m";   // 15 minutes for the most recent data
-    } else if (timeDiff <= SEVEN_DAYS) {
-        return "1h";    // 1 hour for tokens created within the last 7 days
-    } else if (timeDiff <= THIRTY_DAYS) {
-        return "6h";    // 6 hours for tokens created within the last 30 days
-    } else if (timeDiff <= 3 * THIRTY_DAYS) {
-        return "12h";   // 12 hours for tokens older than 30 days, up to 90 days
+    }   else if (timeDiff <= THIRTY_DAYS) {
+        return "1H";    // 6 hours for tokens created within the last 30 days
+    } else if (timeDiff <= 2 * THIRTY_DAYS) {
+        return "12H";   // 12 hours for tokens older than 30 days, up to 90 days
     } else {
         return "1D";    // 1 day for tokens older than 90 days
     }
