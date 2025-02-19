@@ -24,7 +24,7 @@ bot.onText(/\/verify/, async (msg) => {
 
   try {
     // Check if tgId is already verified
-    const response = await fetch(`http://localhost:5000/api/check-tgid?tgId=${tgId}`);
+    const response = await fetch(`https://mandog.fun/api/check-tgid?tgId=${tgId}`);
     const data = await response.json();
 
     if (data.success) {

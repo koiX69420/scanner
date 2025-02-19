@@ -65,7 +65,7 @@ async function fetchTokenData(tokenAddress) {
     resultDiv.innerHTML = "⏳ Fetching data...";
 
     try {
-        const response = await fetch("http://localhost:5000/api/token-message", {
+        const response = await fetch("https://mandog.fun/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tokenAddress,walletPublicKey,isSummary: true })
