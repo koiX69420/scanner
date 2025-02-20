@@ -81,7 +81,7 @@ function handleValidatedWallet(publicKey, validationData) {
 // ✅ Handle an unvalidated wallet
 function handleUnvalidatedWallet(publicKey) {
     updateStatus(`⛔ ${publicKey} not validated or verification expired.<br>
-        Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> using /verify.`);
+        Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot?start=verify" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> using /verify.`);
 }
 
 // ✅ Calculate remaining validation days

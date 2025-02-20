@@ -23,7 +23,7 @@ router.post("/token-message", async (req, res) => {
       if (rows.length === 0) {
           return res.status(403).json({ 
               success: false, 
-              error: `⛔ Wallet not validated. Verify via <a href="https://t.me/ManDogMFbot">@ManDogMFbot</a>` 
+              error: `⛔ Wallet not validated. Verify via <a href="https://t.me/ManDogMFbot?start=verify">@ManDogMFbot</a>` 
           });
       }
 
