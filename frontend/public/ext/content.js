@@ -11,13 +11,6 @@ window.addEventListener("message", (event) => {
         // Store the public key in Chrome storage (for persistence)
         chrome.storage.local.set({ walletPublicKey: publicKey }, () => {
             console.log("Public key stored successfully!");
-            
-            // Set a timeout to remove the public key after 1 day (86400000 milliseconds)
-            setTimeout(() => {
-                chrome.storage.local.remove("walletPublicKey", () => {
-                    console.log("Public key removed from storage after 1 day.");
-                });
-            }, 86400000);
         });
     }
 });
