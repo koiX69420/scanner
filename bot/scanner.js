@@ -41,7 +41,7 @@ const {
 
 
 function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary = false) {
-  if (!holdersData.length) return "❌ No data available for this token.";
+  // if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
 
