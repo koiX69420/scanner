@@ -130,7 +130,7 @@ async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
 
         const result = await res.json();
         if (result.success) {
-            showSuccess(`✅ Payment successful!\nTG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b>`);
+            showSuccess(`✅ Payment successful!\nTG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b>\n You can now proceed to <a href='https://mandog.fun' target='_blank'>mandog.fun</a> to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
         } else {
             showError("❌ Verification failed.");
         }
