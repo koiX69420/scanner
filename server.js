@@ -38,7 +38,7 @@ app.post("/api/token-message", async (req, res) => {
       if (rows.length === 0) {
           return res.status(403).json({ 
               success: false, 
-              error:` ⛔ Wallet not validated or verification expired. Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a>` 
+              error:` ⛔ Wallet not validated or verification expired. Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> using the /verify command` 
           });
       }
 
