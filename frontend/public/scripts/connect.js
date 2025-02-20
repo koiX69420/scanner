@@ -37,7 +37,7 @@ document.getElementById("connectWallet").addEventListener("click", async () => {
                     return; // No need to sign again
                 }
             }else{
-                document.getElementById("status").innerHTML = `⛔ ${publicKey} not validated or verification expired. Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a>`;
+                document.getElementById("status").innerHTML = `⛔ ${publicKey} not validated or verification expired. Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> using the /verify command`;
             }
         }
     } catch (error) {
