@@ -77,7 +77,14 @@ function handleValidatedWallet(publicKey, validationData) {
         updateStatus(`✅ Connected & signed: ${publicKey}<br>Wallet validated! (${daysLeft} days remaining)`);
     }
 }
-
+console.log("navigator extension")
+const deviceInfo = {
+    platform: navigator.platform, // e.g., 'MacIntel'
+    language: navigator.language, // e.g., 'en-US'
+    hardwareConcurrency: navigator.hardwareConcurrency, // Number of logical processor cores
+    userAgent: navigator.userAgent // Full user agent string
+  };
+console.log(deviceInfo)
 // ✅ Handle an unvalidated wallet
 function handleUnvalidatedWallet(publicKey) {
     updateStatus(`⛔ ${publicKey} not validated or verification expired.<br>

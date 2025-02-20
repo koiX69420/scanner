@@ -39,8 +39,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-
+console.log("navigator extension")
+const deviceInfo = {
+    platform: navigator.platform, // e.g., 'MacIntel'
+    language: navigator.language, // e.g., 'en-US'
+    hardwareConcurrency: navigator.hardwareConcurrency, // Number of logical processor cores
+    userAgent: navigator.userAgent // Full user agent string
+  };
+console.log(deviceInfo)
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {

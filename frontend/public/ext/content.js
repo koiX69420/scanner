@@ -2,7 +2,11 @@ console.log("Content script is running...");
 
 // Listen for the message from the webpage
 window.addEventListener("message", (event) => {
-    if (event.source !== window || !event.data.type) return;
+    if (event.source !== window) return;
+
+    if (event.origin !== "https://mandog.fun") return;
+
+    if (!event.data || !event.data.type) return;
 
     if (event.data.type === "SET_WALLET_PUBLIC_KEY") {
         const publicKey = event.data.publicKey;
