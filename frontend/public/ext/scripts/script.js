@@ -62,13 +62,17 @@ async function fetchTokenData(tokenAddress) {
         return;
     }
 
-    resultDiv.innerHTML = "⏳ Fetching data...";
+    resultDiv.innerHTML = `
+    <div class="loading-container">
+        <span class="spinner"></span>
+    </div>
+`;
 
     try {
         const response = await fetch("https://mandog.fun/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tokenAddress,walletPublicKey,isSummary: true })
+            body: JSON.stringify({ tokenAddress, walletPublicKey, isSummary: true })
         });
 
         const data = await response.json();
@@ -77,6 +81,7 @@ async function fetchTokenData(tokenAddress) {
             shakeInput();
         } else {
             resultDiv.innerHTML = convertTelegramTextToHTML(data.text);
+            document.getElementById("tokenAddress").value=""
         }
     } catch (error) {
         resultDiv.innerHTML = "❌ Failed to fetch data.";

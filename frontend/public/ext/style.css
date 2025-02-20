@@ -7,6 +7,7 @@
     --border-color: #444;
     --result-bg: #1e1e1e;
     --button-bg: #03DAC6;
+    --button-hover: #00ffe5;
     --spacing: 10px;
     --border-radius: 5px;
 }
@@ -33,13 +34,13 @@ h2 {
     color: var(--primary-color);
     font-size: 18px;
     text-align: center;
+    margin-bottom: 0px;
 }
 #walletAddress {
     background-color: #0A1627; /* Dark background for contrast */
-    color: #03DAC6; /* Solana's accent color */
-    padding: 15px;
+    color: #228b81; /* Solana's accent color */
+    padding: 5px;
     border-radius: var(--border-radius);
-    font-weight: bold;
     text-align: center;
     align-items: center;
     justify-content: center;
@@ -77,23 +78,31 @@ h2 {
 #scanButton {
     width: 70px;
     padding: 10px 20px;
-
     background-color: var(--button-bg);
     color: white;
     border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
     display: inline-block; /* Ensure button is inline */
+    transition: all 0.3s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
 
+/* Hover effect */
+#scanButton:hover {
+    background-color: var(--button-hover);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
 }
 
 /* Result Box (Matches input-container width) */
 #result {
     padding: 15px;
+    padding-top: 5px;
+    margin-top: 10px;
     border-radius: var(--border-radius);
     font-size: 14px;
     line-height: 1.6;
-    margin-top: var(--spacing);
     min-height: 50px;
 }
 
@@ -241,4 +250,25 @@ footer {
     background-color: #03a89c; /* Slightly darker shade for the thumb when hovered */
 }
 
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
