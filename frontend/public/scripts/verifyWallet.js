@@ -18,6 +18,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
         try {
             const provider = getSolanaProvider();
+            console.log(provider)
             const walletAddress = await connectWallet(provider);
             const signedMessage = await signVerificationMessage(provider, tgId);
             updateStatus(`Owner of <b>${walletAddress}</b> confirmed.\n Proceed with payment to verify Telegram User with ID:<b>${tgId}</b>.`)
@@ -78,8 +79,16 @@ async function signVerificationMessage(provider, tgId) {
     return await provider.signMessage(encodedMessage, "utf8");
 }
 
+async function getRPCUrl() {
+    const response = await fetch("/get-solana-rpc");
+    const data = await response.json();
+    return data.rpcUrl;
+}
+
 async function processPayment(provider) {
-    const connection = new window.solanaWeb3.Connection("https://docs-demo.solana-mainnet.quiknode.pro/");
+    const rpcUrl = await getRPCUrl();
+
+    const connection = new window.solanaWeb3.Connection(rpcUrl);
     const receivingWallet = new window.solanaWeb3.PublicKey("5twk4qwDCU4dcUzHQSXyL86qv97UVbvCTEWYyW8Vo6QK");
     const paymentAmount = 0.0001 * window.solanaWeb3.LAMPORTS_PER_SOL;
     const blockhash = await connection.getLatestBlockhash();
@@ -129,9 +138,10 @@ async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
         });
 
         const result = await res.json();
+        console.log(result)
         if (result.success) {
-            window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey }, "*");
-            showSuccess(`✅ Payment successful!\nTG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b>\n You can now proceed to <a href='https://mandog.fun' target='_blank'>mandog.fun</a> to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
+            window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", walletAddress }, "*");
+            showSuccess(`✅ Payment successful!\nTG User ${tgId} has validated the wallet: ${walletAddress}\n You can now proceed to https://mandog.fun to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
         } else {
             showError("❌ Verification failed.");
         }
