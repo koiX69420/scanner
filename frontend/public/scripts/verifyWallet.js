@@ -18,14 +18,16 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
 
         try {
             const provider = getSolanaProvider();
-            console.log(provider)
             const walletAddress = await connectWallet(provider);
             const signedMessage = await signVerificationMessage(provider, tgId);
             updateStatus(`Owner of <b>${walletAddress}</b> confirmed.\n Proceed with payment to verify Telegram User with ID:<b>${tgId}</b>.`)
-            const signature = await processPayment(provider);
+            const rpcUrl = await getRPCUrl();
+
+            const connection = new window.solanaWeb3.Connection(rpcUrl);
+            const signature = await processPayment(provider,connection);
 
             updateStatus(" Please wait, confirming payment...",true);
-            const isConfirmed = await confirmTransaction(signature.signature);
+            const isConfirmed = await confirmTransaction(signature.signature,connection);
             
             if (isConfirmed) {
                 await sendVerificationToBackend(tgId, walletAddress, signedMessage);
@@ -85,11 +87,15 @@ async function getRPCUrl() {
     return data.rpcUrl;
 }
 
-async function processPayment(provider) {
-    const rpcUrl = await getRPCUrl();
+async function getSubWallet() {
+    const response = await fetch("/get-sub-wallet");
+    const data = await response.json();
+    return data.subWallet;
+}
+async function processPayment(provider,connection) {
+    const subWallet = await getSubWallet();
 
-    const connection = new window.solanaWeb3.Connection(rpcUrl);
-    const receivingWallet = new window.solanaWeb3.PublicKey("5twk4qwDCU4dcUzHQSXyL86qv97UVbvCTEWYyW8Vo6QK");
+    const receivingWallet = new window.solanaWeb3.PublicKey(subWallet);
     const paymentAmount = 0.0001 * window.solanaWeb3.LAMPORTS_PER_SOL;
     const blockhash = await connection.getLatestBlockhash();
 
@@ -108,8 +114,7 @@ async function processPayment(provider) {
     return await provider.signAndSendTransaction(transaction);
 }
 
-async function confirmTransaction(signature) {
-    const connection = new window.solanaWeb3.Connection("https://docs-demo.solana-mainnet.quiknode.pro/");
+async function confirmTransaction(signature,connection) {
     const blockhash = await connection.getLatestBlockhash();
 
     try {

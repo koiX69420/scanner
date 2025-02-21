@@ -22,6 +22,16 @@ router.get("/get-solana-rpc", async (req, res) => {
   });
 });
 
+router.get("/get-sub-wallet", async (req, res) => {
+  if (!process.env.SUB_WALLET) {
+      return res.status(500).json({ error: "SUB WALLET is missing" });
+  }
+  
+  res.json({
+      subWallet: `${process.env.SUB_WALLET}`,
+  });
+});
+
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
 });
