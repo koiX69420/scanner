@@ -239,7 +239,7 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 
     topTokens.forEach(token => {
         if (token.metadata?.address && token.metadata.address !== tokenAddress) {
-            const flag = token.metadata?.market_cap ? `:_${formatMarketCap(token.metadata.market_cap)}_` : "";
+            const flag = token.metadata?.market_cap ? `:${formatMarketCap(token.metadata.market_cap)}` : "";
             message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
         }
     });
@@ -458,6 +458,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   console.timeEnd(timeLabel);
   const apiCalls = await getApiCallCount()
   console.log(`Api Calls: ${apiCalls}`)
+  console.log(formattedMessage)
   const responseData = { text: formattedMessage, replyMarkup: { inline_keyboard: buttons } };
 
   // Store the result in the cache with a timestamp
