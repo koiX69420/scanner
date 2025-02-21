@@ -272,23 +272,23 @@ function generateBuyOptions(dexSocials, tokenAddress) {
 
   // Define exchanges and their links
   const exchanges = [
-    ["Photon", `https://photon-sol.tinyastro.io/en/r/@koii/${tokenAddress}`],
-    ["BullX", `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}&r=M7B0AY33YBS`]
+    ["Photon", `https://photon-sol.tinyastro.io/en/r/@mandogmf/${tokenAddress}`], //bast fix
+    ["BullX", `https://bullx.io/terminal?chainId=1399811149&address=${tokenAddress}&r=CCKX85ROSW8`] //bast fix
   ];
 
   // Insert Axiom between BullX and Bonk if pool ID exists
   if (axiomPoolId) {
-    exchanges.push(["Axiom", `https://axiom.trade/meme/${axiomPoolId}`]);
+    exchanges.push(["Axiom", `https://axiom.trade/meme/${axiomPoolId}`]); // no buy referral links so far
   }
 
   exchanges.push(
-    ["Bonk", `https://t.me/bonkbot_bot?start=ref_1g9xb_ca_${tokenAddress}`],
-    ["Banana", `https://t.me/BananaGun_bot?start=snp_rickburpbot_${tokenAddress}`],
-    ["Trojan", `https://t.me/paris_trojanbot?start=d-RickBot-${tokenAddress}`],
-    ["Bloom", `https://t.me/BloomSolanaEU2_bot?start=ref_RickBot_ca_${tokenAddress}`],
-    ["GMGN", `https://gmgn.ai/sol/token/${tokenAddress}`],
-    ["PepeBoost", `https://t.me/pepeboost_sol_bot?start=ref_0xRick_ca_${tokenAddress}`],
-    ["Shuriken", `https://t.me/ShurikenTradeBot?start=qt-RickSanchez-${tokenAddress}`]
+    ["Bonk", `https://t.me/bonkbot_bot?start=ref_d2qw8_ca_${tokenAddress}`], // bast fix
+    ["Banana", `https://t.me/BananaGun_bot?start=snp_mandogmf_${tokenAddress}`], //bast fix
+    ["Trojan", `https://t.me/paris_trojanbot?start=d-RickBot-${tokenAddress}`], // no nid
+    ["Bloom", `https://t.me/BloomSolanaEU2_bot?start=ref_6QID1VN0J8_ca_${tokenAddress}`], //bast fix
+    ["GMGN", `https://t.me/GMGN_sol_bot?start=i_9M3uB0qy_c_${tokenAddress}`], // no nid
+    ["PepeBoost", `https://t.me/pepeboost_sol_bot?start=ref_0k10mc_ca_${tokenAddress}`], //bast fix
+    ["Shuriken", `https://t.me/ShurikenTradeBot?start=qt-deegee99x-${tokenAddress}`] // bast fix
   );
 
   return exchanges.map(([name, url]) => `[${name}](${url})`).join(" | ") + "\n\n";

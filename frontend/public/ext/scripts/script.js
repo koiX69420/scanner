@@ -108,13 +108,26 @@ function getWalletPublicKey() {
 }
 
 function convertTelegramTextToHTML(text) {
-    return text
-        .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") // Bold
-        .replace(/\*(.*?)\*/g, "<b>$1</b>") // Bold fallback
-        .replace(/_(.*?)_/g, "<i>$1</i>") // Italic instead of underline
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>') // Links
-        .replace(/`(.*?)`/g, '<span class="copyable"><code>$1</code></span>') // Make code copyable
-        .replace(/\n/g, "<br>"); // New lines to HTML
+    // Protect underscores inside links first
+    text = text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
+        return `<a href="${url.replace(/_/g, "UNDERSCORE")}" target="_blank">${label}</a>`;
+    });
+
+    // Convert bold markdown
+    text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") // Bold
+               .replace(/\*(.*?)\*/g, "<b>$1</b>"); // Bold fallback
+
+    // Convert `_italic_` (without affecting links)
+    text = text.replace(/_(.*?)_/g, "<i>$1</i>");
+
+    // Restore underscores inside links
+    text = text.replace(/UNDERSCORE/g, "_");
+
+    // Convert inline code blocks
+    text = text.replace(/`(.*?)`/g, '<span class="copyable"><code>$1</code></span>');
+
+    // Convert new lines to <br>
+    return text.replace(/\n/g, "<br>");
 }
 
 document.getElementById("tokenAddress").addEventListener("keypress", function (event) {
