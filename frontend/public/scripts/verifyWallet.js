@@ -12,7 +12,7 @@ updateStatus("🔹 Starting wallet verification...")
         const validationData = await checkTgValidation(tgId);
         if (validationData.success) {
 
-            return showSuccess(`✅ TG User ${tgId} is already validated with the wallet: ${validationData.publicKey} (${validationData.daysLeft} days remaining)`);
+            return showSuccess(`✅ TG User <b>${tgId}</b> is already validated with the wallet: <b>${validationData.publicKey}</b> (<b>${validationData.daysLeft}</b> days remaining)`);
             
         }
 
