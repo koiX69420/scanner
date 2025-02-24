@@ -41,7 +41,7 @@ function updateChart(timeframe) {
                     y: scanCounts,
                     type: 'scatter',
                     mode: 'lines',
-                    name: `${symbol} (Total: ${cumulativeSum})`, // Append total scans
+                    name: `${symbol} (Scans: ${cumulativeSum})`, // Append total scans
                     totalScans: cumulativeSum, // Store total for sorting
                     line: { width: 1 },
                     hoverinfo: 'y+name',
