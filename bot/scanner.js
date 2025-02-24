@@ -44,9 +44,9 @@ function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clu
   // if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
-
   let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
+
   if (!isSummary) {
     message += generateTop20Holders(top20Data, clusterPercentages, metadata);
     message += generateTooltip();
@@ -185,10 +185,13 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
     currentMarketCap = raydiumPool.marketCap;
   } else if (pumpfunPool?.marketCap) {
     currentMarketCap = pumpfunPool.marketCap;
+  }else{
+    currentMarketCap=0
   }
-  
+
   // Format the selected market cap
   const formattedMarketCap = formatMarketCap(currentMarketCap);
+
   let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
   
   // Check if ATH is available and non-zero
@@ -213,7 +216,6 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   if (metadata.supply) {
     // Find the developer's token account holding the token
     const devTokenAccount = devTokenAccounts.find(acc => acc.token_address === tokenAddress);
-
     if (devTokenAccount) {
       devHolds = `(${((devTokenAccount.amount / metadata.supply) * 100).toFixed(2)}%)`;
     }
@@ -418,7 +420,6 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
@@ -441,6 +442,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   // Fetch Dex Socials (which also can run in parallel)
   const dexSocials = await fetchDexSocials(pools);
   // Format the message based on all the fetched data
+
   const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary);
 
   console.log("Sent message");
