@@ -72,7 +72,7 @@ function handleValidatedWallet(publicKey, validationData) {
     const daysLeft = getDaysLeft(validationData.valid_until);
 
     if (daysLeft > 0) {
-        window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey }, "*");
+        window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey:publicKey }, "*");
         console.log(`✅ Sent public key to extension: ${publicKey}`);
         updateStatus(`✅ Connected & signed: ${publicKey}<br>Wallet validated! (${daysLeft} days remaining)`);
     } else {
