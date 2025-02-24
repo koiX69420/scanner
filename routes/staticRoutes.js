@@ -11,6 +11,10 @@ router.get("/verify", (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/verify.html'));
 });
 
+router.get("/deviceupdate", (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/deviceupdate.html'));
+});
+
 // Endpoint to serve the RPC URL
 router.get("/get-solana-rpc", async (req, res) => {
   if (!process.env.HELIUS_URL) {

@@ -8,7 +8,7 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
         if (!tgId) return showError("Missing Telegram ID!");
 
         // Check if wallet is already verified
-        const validationData = await checkWalletValidation(tgId);
+        const validationData = await checkTgValidation(tgId);
         if (validationData.success) {
             const daysLeft = getDaysLeft(validationData.last_updated);
             if (daysLeft > 0) {
@@ -44,9 +44,77 @@ if (window.location.pathname === "/verify" && new URLSearchParams(window.locatio
     console.log("This is not the correct verification page.");
 }
 
+if (window.location.pathname === "/deviceupdate" && new URLSearchParams(window.location.search).has("tgId")) {
+    updateStatus("🔹 Starting device update...");
+
+    async function updateDevice() {
+        const params = new URLSearchParams(window.location.search);
+        const tgId = params.get("tgId");
+
+        if (!tgId) return showError("Missing Telegram ID!");
+
+        // Check if wallet is already verified
+        const validationData = await checkTgValidation(tgId);
+        if (!validationData.success) {
+            return showError("❌ Telegram ID is not verified. Please complete the verification process first.");
+        }
+
+        try {
+            const provider = getSolanaProvider();
+            const walletAddress = await connectWallet(provider);
+            const signedMessage = await signVerificationMessage(provider, tgId);
+
+            updateStatus(`Owner of <b>${walletAddress}</b> confirmed.\n Proceed with device update for Telegram User with ID:<b>${tgId}</b>.`);
+
+            // No payment involved for device update, just proceed with sending the device data
+            await senddeviceupdateToBackend(tgId, walletAddress, signedMessage);
+
+        } catch (error) {
+            showError(`❌ Error: ${error.message}`);
+        }
+    }
+
+    updateDevice();
+} else {
+    console.log("This is not the correct device update page.");
+}
+
+async function senddeviceupdateToBackend(tgId, walletAddress, signedMessage) {
+    try {
+        // Get the current device data (navigator data) to send along with the request
+        const deviceData = {
+            tgId,
+            walletAddress,
+            signedMessage,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            language: navigator.language,
+            userAgent: navigator.userAgent
+        };
+
+        // Send a POST request to the backend /update-device endpoint
+        const res = await fetch("/api/update-device", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(deviceData)
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            showSuccess(`✅ Device data updated successfully for user with Telegram ID: ${tgId}!`);
+        } else {
+            // Show the specific error message returned by the backend
+            showError(`❌ Device update failed: ${result.error}`);
+        }
+    } catch (error) {
+        showError("❌ Error contacting backend for device update.");
+        console.error("❌ Error sending device update:", error);
+    }
+}
 // ✅ Helper Functions
 
-async function checkWalletValidation(tgId) {
+async function checkTgValidation(tgId) {
     try {
         const response = await fetch(`/api/check-tgid?tgId=${tgId}`);
         return await response.json();
@@ -136,17 +204,27 @@ async function confirmTransaction(signature,connection) {
 
 async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
     try {
-        const res = await fetch("/api/verify-wallet", {
+        const verificationData= {
+            tgId,
+            walletAddress,
+            signedMessage,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            language: navigator.language,
+            userAgent: navigator.userAgent
+        };
+
+        const res = await fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tgId, walletAddress, signedMessage }),
+            body: JSON.stringify(verificationData),
         });
 
         const result = await res.json();
         console.log(result)
         if (result.success) {
             window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", walletAddress }, "*");
-            showSuccess(`✅ Payment successful!\nTG User ${tgId} has validated the wallet: ${walletAddress}\n You can now proceed to https://mandog.fun to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
+            showSuccess(`✅ Payment successful for User in Browser ${verificationData}!\nTG User ${tgId} has validated the wallet: ${walletAddress}\n You can now proceed to https://mandog.fun to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
         } else {
             showError("❌ Verification failed.");
         }

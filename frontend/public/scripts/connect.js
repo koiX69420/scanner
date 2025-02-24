@@ -69,22 +69,17 @@ async function checkWalletValidation(publicKey) {
 
 // ✅ Handle a validated wallet
 function handleValidatedWallet(publicKey, validationData) {
-    const daysLeft = getDaysLeft(validationData.last_updated);
+    const daysLeft = getDaysLeft(validationData.valid_until);
 
     if (daysLeft > 0) {
         window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey }, "*");
         console.log(`✅ Sent public key to extension: ${publicKey}`);
         updateStatus(`✅ Connected & signed: ${publicKey}<br>Wallet validated! (${daysLeft} days remaining)`);
+    } else {
+        updateStatus(`⚠️ Wallet validation expired.`);
     }
 }
-console.log("navigator extension")
-const deviceInfo = {
-    platform: navigator.platform, // e.g., 'MacIntel'
-    language: navigator.language, // e.g., 'en-US'
-    hardwareConcurrency: navigator.hardwareConcurrency, // Number of logical processor cores
-    userAgent: navigator.userAgent // Full user agent string
-  };
-console.log(deviceInfo)
+
 // ✅ Handle an unvalidated wallet
 function handleUnvalidatedWallet(publicKey) {
     updateStatus(`⛔ ${publicKey} not validated or verification expired.<br>
@@ -92,10 +87,10 @@ function handleUnvalidatedWallet(publicKey) {
 }
 
 // ✅ Calculate remaining validation days
-function getDaysLeft(lastUpdated) {
-    const lastUpdateDate = new Date(lastUpdated);
+function getDaysLeft(validUntil) {
+    const validUntilDate = new Date(validUntil);
     const now = new Date();
-    return Math.max(30 - Math.floor((now - lastUpdateDate) / (1000 * 60 * 60 * 24)), 0);
+    return Math.max(Math.floor((validUntilDate - now) / (1000 * 60 * 60 * 24)), 0); // Ensure non-negative days
 }
 
 // ✅ Update status message

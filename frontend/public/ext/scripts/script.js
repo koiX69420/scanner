@@ -39,22 +39,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-console.log("navigator extension")
-const deviceInfo = {
-    platform: navigator.platform, // e.g., 'MacIntel'
-    language: navigator.language, // e.g., 'en-US'
-    hardwareConcurrency: navigator.hardwareConcurrency, // Number of logical processor cores
-    userAgent: navigator.userAgent // Full user agent string
-  };
-console.log(deviceInfo)
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
 
     const resultDiv = document.getElementById("result");
     // Get walletPublicKey from Chrome storage
-    const walletPublicKey = await getWalletPublicKey();
-    if (!walletPublicKey) {
+    const walletAddress = await getWalletPublicKey();
+    if (!walletAddress) {
         resultDiv.innerHTML = "❌ Wallet is not connected. Please connect your wallet.";
         shakeInput();
         return;
@@ -75,10 +67,20 @@ async function fetchTokenData(tokenAddress) {
 `;
 
     try {
-        const response = await fetch("https://mandog.fun/api/token-message", {
+        const verificationData= {
+            tokenAddress,
+            walletAddress,
+            isSummary:false,
+            hardwareConcurrency: navigator.hardwareConcurrency,
+            deviceMemory: navigator.deviceMemory,
+            language: navigator.language,
+            userAgent: navigator.userAgent
+        };
+
+        const response = await fetch("http://localhost:5000/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tokenAddress, walletPublicKey, isSummary: false })
+            body: JSON.stringify(verificationData)
         });
 
         const data = await response.json();
