@@ -8,7 +8,7 @@ function updateChart(timeframe) {
                 console.warn('No data available for the selected timeframe.');
                 return;
             }
-
+            console.log(scanHistoryData)
             // Group scan data by symbol and timestamp
             const symbolScanData = {};
             const allTimestamps = new Set();
@@ -16,9 +16,10 @@ function updateChart(timeframe) {
             scanHistoryData.forEach(item => {
                 const timestamp = new Date(item.scan_timestamp).toISOString();
                 const symbol = item.symbol;
+                const tokenAddress = item.token_address; // Extract token address
 
                 if (!symbolScanData[symbol]) {
-                    symbolScanData[symbol] = { timestamps: {}, cumulativeSum: 0 };
+                    symbolScanData[symbol] = { timestamps: {}, cumulativeSum: 0,tokenAddress:tokenAddress };
                 }
 
                 symbolScanData[symbol].timestamps[timestamp] = (symbolScanData[symbol].timestamps[timestamp] || 0) + 1;
@@ -27,21 +28,23 @@ function updateChart(timeframe) {
 
             // Convert timestamps to a sorted array
             const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => new Date(a) - new Date(b));
-
+            console.log(symbolScanData)
             // Prepare the data for the Plotly chart
             let chartData = Object.keys(symbolScanData).map(symbol => {
+                console.log(symbol)
                 let cumulativeSum = 0;
                 const scanCounts = sortedTimestamps.map(ts => {
                     cumulativeSum += symbolScanData[symbol].timestamps[ts] || 0;
                     return cumulativeSum;
                 });
+                const displaySymbol = symbol.startsWith('$') ? symbol : `$${symbol}`;
 
                 return {
                     x: sortedTimestamps,
                     y: scanCounts,
                     type: 'scatter',
                     mode: 'lines',
-                    name: `${symbol} (Scans: ${cumulativeSum})`, // Append total scans
+                    name: `${displaySymbol} <b>${symbolScanData[symbol].tokenAddress}</b> Scans: <b>${cumulativeSum}</b>`, // Append token address and total scans
                     totalScans: cumulativeSum, // Store total for sorting
                     line: { width: 1 },
                     hoverinfo: 'y+name',

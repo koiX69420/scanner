@@ -1,39 +1,52 @@
+/* Root variables for theming and color control */
 :root {
     --primary-color: #03DAC6;
     --secondary-color: #BB86FC;
     --background-color: #121212;
-    --text-color: #000000;
+    --text-color: #FFFFFF;
     --input-bg: #222;
     --border-color: #444;
     --result-bg: #1e1e1e;
     --button-bg: #03DAC6;
     --spacing: 10px;
-    --border-radius: 5px;
+    --border-radius: 8px;
+    --font-family: 'Arial', sans-serif;
+    --max-width: 1200px;
+    --chart-height: 500px;
 }
 
+/* Reset body and base styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
     margin: 0;
     padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
+/* Header section */
 header {
-    background-color: var(--primary-color);
-    color: var(--text-color);
-    padding: 15px 0;
+    color: var(--primary-color);
     text-align: center;
+    padding: 20px 0;
     border-bottom: 2px solid var(--border-color);
 }
 
+/* Heading styling */
 h1 {
     margin: 0;
-    font-size: 32px;
+    font-size: 2rem;
+    font-weight: 600;
 }
 
+/* Main content area */
+main {
+    padding: var(--spacing);
+}
+
+/* Container for the chart */
 .container {
-    max-width: 1200px;
+    max-width: var(--max-width);
     margin: 50px auto;
     padding: var(--spacing);
     background-color: var(--result-bg);
@@ -41,42 +54,15 @@ h1 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Chart container styling */
 .chart-container {
     width: 100%;
-    height: 500px;
+    height: var(--chart-height);
     background-color: var(--background-color);
     border-radius: var(--border-radius);
-    padding: var(--spacing);
 }
 
-/* Timeframe Buttons */
-button {
-    background-color: var(--button-bg);
-    color: var(--text-color);
-    border: none;
-    padding: var(--spacing);
-    margin: 0 var(--spacing);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-size: 16px;
-}
-
-button:hover {
-    background-color: var(--secondary-color);
-}
-
-button:focus {
-    outline: none;
-}
-
-/* Layout for Timeframe Selection */
-.container > div {
-    display: flex;
-    justify-content: center;
-    margin-bottom: var(--spacing);
-}
-
-/* Apply Plotly color scheme for chart lines and background */
+/* Plotly customization for a consistent theme */
 .plotly-graph-div {
     background-color: var(--background-color) !important;
 }
@@ -93,7 +79,17 @@ button:focus {
     color: var(--text-color);
 }
 
-/* Style for hover text and legend */
+/* Hover information styling */
+.plotly .hoverlayer .hovertext {
+    background-color: var(--result-bg);
+    color: var(--text-color);
+    font-size: 14px;
+    border-radius: var(--border-radius);
+    padding: var(--spacing);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Legend customization */
 .plotly .legend {
     font-size: 14px;
     color: var(--text-color);
@@ -103,12 +99,22 @@ button:focus {
     cursor: pointer;
 }
 
-/* Hover info */
-.plotly .hoverlayer .hovertext {
-    background-color: var(--result-bg);
-    color: var(--text-color);
-    font-size: 14px;
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+/* Responsive layout improvements */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    .chart-container {
+        height: 400px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .container {
+        padding: var(--spacing);
+        margin: 20px;
+    }
 }
