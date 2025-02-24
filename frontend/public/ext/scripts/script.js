@@ -68,8 +68,8 @@ async function fetchTokenData(tokenAddress) {
 
     try {
         const verificationData= {
-            tokenAddress,
-            walletAddress,
+            tokenAddress:tokenAddress,
+            walletAddress:walletAddress,
             isSummary:false,
             hardwareConcurrency: navigator.hardwareConcurrency,
             deviceMemory: navigator.deviceMemory,
@@ -77,7 +77,7 @@ async function fetchTokenData(tokenAddress) {
             userAgent: navigator.userAgent
         };
 
-        const response = await fetch("http://localhost:5000/api/token-message", {
+        const response = await fetch("https://mandog.fun/api/token-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(verificationData)
