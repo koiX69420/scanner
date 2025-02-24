@@ -42,8 +42,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
-
     const resultDiv = document.getElementById("result");
+
     // Get walletPublicKey from Chrome storage
     const walletAddress = await getWalletPublicKey();
     if (!walletAddress) {
@@ -61,16 +61,16 @@ async function fetchTokenData(tokenAddress) {
     }
 
     resultDiv.innerHTML = `
-    <div class="loading-container">
-        <span class="spinner"></span>
-    </div>
-`;
+        <div class="loading-container">
+            <span class="spinner"></span>
+        </div>
+    `;
 
     try {
-        const verificationData= {
-            tokenAddress:tokenAddress,
-            walletAddress:walletAddress,
-            isSummary:false,
+        const verificationData = {
+            tokenAddress: tokenAddress,
+            walletAddress: walletAddress,
+            isSummary: false,
             hardwareConcurrency: navigator.hardwareConcurrency,
             deviceMemory: navigator.deviceMemory,
             language: navigator.language,
@@ -84,20 +84,31 @@ async function fetchTokenData(tokenAddress) {
         });
 
         const data = await response.json();
-        if (data.error) {
-            resultDiv.innerHTML = `${data.error}`;
-            shakeInput();
+
+        // Create a refresh button
+        const refreshButton = document.createElement("button");
+        refreshButton.textContent = "Refresh";
+        refreshButton.className = "refresh-button button";
+        refreshButton.onclick = () => fetchTokenData(tokenAddress); // Refresh on click
+
+        // Append refresh button to resultDiv
+        resultDiv.innerHTML = "";
+        resultDiv.appendChild(refreshButton);
+
+        // Append result content
+        const resultContent = document.createElement("div");
+        resultContent.innerHTML = data.error ? `${data.error}` : convertTelegramTextToHTML(data.text);
+        resultDiv.appendChild(resultContent);
+
+        if (!data.error) {
+            document.getElementById("tokenAddress").value = "";
         } else {
-            resultDiv.innerHTML = convertTelegramTextToHTML(data.text);
-            document.getElementById("tokenAddress").value=""
+            shakeInput();
         }
     } catch (error) {
         resultDiv.innerHTML = "❌ Failed to fetch data.";
         shakeInput();
     }
-
-    // Smoothly fade in results
-    resultDiv.style.opacity = "1";
 }
 
 // Helper function to get walletPublicKey from Chrome storage
