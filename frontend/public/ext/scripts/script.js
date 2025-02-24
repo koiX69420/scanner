@@ -121,6 +121,10 @@ function getWalletPublicKey() {
 }
 
 function convertTelegramTextToHTML(text) {
+    const match = text.match(/\[\$(.*?)\]/);
+    if (match && match[1]) {
+        document.title = `$${match[1]}`; // Update page title
+    }
     // Protect underscores inside links first
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, (match, label, url) => {
         return `<a href="${url.replace(/_/g, "UNDERSCORE")}" target="_blank">${label}</a>`;
