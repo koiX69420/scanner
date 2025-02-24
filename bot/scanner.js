@@ -1,6 +1,6 @@
 require("dotenv").config();
 const bot = require("../tg/tg");
-
+const pool = require('../db/db');
 
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 90
@@ -411,6 +411,8 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
     if (now - timestamp < 30000) { // 30 seconds
       console.log("Returning cached data");
       availableApiCalls += API_CALLS_PER_REQUEST;
+      const metadata = await fetchTokenMetadata(tokenAddress);
+      recordTokenScanHistory(tokenAddress,metadata.metadata.symbol)
       return data; // Return cached response
     }
   }
@@ -464,8 +466,22 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // Store the result in the cache with a timestamp
   cache.set(cacheKey, { timestamp: now, data: responseData });
-
+  recordTokenScanHistory(tokenAddress,metadata.metadata.symbol)
   return responseData;
+}
+
+// Function to insert a scan record for the token
+async function recordTokenScanHistory(tokenAddress, symbol) {
+  const query = `
+    INSERT INTO token_scan_history (token_address, symbol, scan_timestamp)
+    VALUES ($1, $2, CURRENT_TIMESTAMP)
+  `;
+  
+  try {
+    await pool.query(query, [tokenAddress, symbol]);
+  } catch (error) {
+    console.error('Error recording token scan history:', error);
+  }
 }
 
 async function sendMessageWithButton(chatId, tokenAddress) {

@@ -23,11 +23,13 @@ const authRoutes = require('./routes/authRoutes');
 const tokenRoutes = require('./routes/messageRoutes');
 const staticRoutes = require('./routes/staticRoutes');
 const validationRoutes = require('./routes/validationRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 // Use route modules
 app.use('/api', tokenRoutes);
 app.use('/api', authRoutes);
 app.use('/api', validationRoutes);
+app.use('/api', statsRoutes);
 app.use('/', staticRoutes);
 
 

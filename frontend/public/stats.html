@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Scan History</title>
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="styles/stats.css">
+</head>
+<body>
+
+<header>
+    <h1>Token Scan History Dashboard</h1>
+</header>
+
+<div class="container">
+    <div>
+        <!-- Timeframe Selection -->
+        <button id="timeframe-1d">1 Day</button>
+        <button id="timeframe-7d">7 Days</button>
+        <button id="timeframe-30d">30 Days</button>
+    </div>
+    
+    <div class="chart-container" id="scan-history-chart"></div>
+</div>
+
+<script src="scripts/stats.js"></script>
+
+</body>
+</html>
