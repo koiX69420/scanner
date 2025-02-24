@@ -412,7 +412,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
       console.log("Returning cached data");
       availableApiCalls += API_CALLS_PER_REQUEST;
       const metadata = await fetchTokenMetadata(tokenAddress);
-      recordTokenScanHistory(tokenAddress,metadata.metadata.symbol)
+      recordTokenScanHistory(tokenAddress,metadata.symbol)
       return data; // Return cached response
     }
   }
@@ -422,6 +422,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
+  console.log(metadata)
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
@@ -466,7 +467,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // Store the result in the cache with a timestamp
   cache.set(cacheKey, { timestamp: now, data: responseData });
-  recordTokenScanHistory(tokenAddress,metadata.metadata.symbol)
+  recordTokenScanHistory(tokenAddress,metadata.symbol)
   return responseData;
 }
 
