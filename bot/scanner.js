@@ -365,11 +365,12 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
       message += `  Recipients: ${cluster.recipients.length}\n`;
       cluster.recipients.slice(0, 4).forEach(recipient => {
         const recipientData = holdersData.find(item => item.Address === recipient);
+
         const holding = recipientData ? recipientData["Current Holding (%)"] : "N/A";
         const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
         const rankingText = ranking > 0 ? `#*${ranking}*` : "";
-
-        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%*\n`;
+        const trendEmoji = parseFloat(recipientData["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
+        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%* ${trendEmoji}\n`;
       });
     }
   });
