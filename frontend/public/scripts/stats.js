@@ -1,6 +1,5 @@
 // Function to update the chart based on the selected timeframe
 function updateChart(timeframe) {
-    // Fetch token scan history with the selected timeframe as a query parameter
     fetch(`/api/get-token-scan-history?timeframe=${encodeURIComponent(timeframe)}`)
         .then(response => response.json())
         .then(data => {
@@ -15,7 +14,7 @@ function updateChart(timeframe) {
             const allTimestamps = new Set();
 
             scanHistoryData.forEach(item => {
-                const timestamp = new Date(item.scan_timestamp).toISOString(); // Use ISO format for uniformity
+                const timestamp = new Date(item.scan_timestamp).toISOString();
                 const symbol = item.symbol;
 
                 if (!symbolScanData[symbol]) {
@@ -30,7 +29,7 @@ function updateChart(timeframe) {
             const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => new Date(a) - new Date(b));
 
             // Prepare the data for the Plotly chart
-            const chartData = Object.keys(symbolScanData).map(symbol => {
+            let chartData = Object.keys(symbolScanData).map(symbol => {
                 let cumulativeSum = 0;
                 const scanCounts = sortedTimestamps.map(ts => {
                     cumulativeSum += symbolScanData[symbol].timestamps[ts] || 0;
@@ -42,12 +41,16 @@ function updateChart(timeframe) {
                     y: scanCounts,
                     type: 'scatter',
                     mode: 'lines',
-                    name: symbol,
+                    name: `${symbol} (Total: ${cumulativeSum})`, // Append total scans
+                    totalScans: cumulativeSum, // Store total for sorting
                     line: { width: 1 },
                     hoverinfo: 'y+name',
                     hovertemplate: `${symbol}<br>Cumulative Scans: %{y}<extra></extra>`,
                 };
             });
+
+            // Sort chartData by totalScans in descending order
+            chartData.sort((a, b) => b.totalScans - a.totalScans);
 
             // Layout configuration with range slider
             const layout = {
