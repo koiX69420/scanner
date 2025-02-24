@@ -460,7 +460,6 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   console.timeEnd(timeLabel);
   const apiCalls = await getApiCallCount()
   console.log(`Api Calls: ${apiCalls}`)
-  console.log(formattedMessage)
   const responseData = { text: formattedMessage, replyMarkup: { inline_keyboard: buttons } };
 
   // Store the result in the cache with a timestamp
