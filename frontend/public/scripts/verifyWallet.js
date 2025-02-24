@@ -1,6 +1,7 @@
 // Check if the current page is the verify page with tgId in the URL
 if (window.location.pathname === "/verify" && new URLSearchParams(window.location.search).has("tgId")) {
-    updateStatus("🔹 Starting wallet verification...")
+updateStatus("🔹 Starting wallet verification...")
+
     async function verifyWallet() {
         const params = new URLSearchParams(window.location.search);
         const tgId = params.get("tgId");
@@ -224,7 +225,7 @@ async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
         console.log(result)
         if (result.success) {
             window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", walletAddress }, "*");
-            showSuccess(`✅ Payment successful for User in Browser ${verificationData}!\nTG User ${tgId} has validated the wallet: ${walletAddress}\n You can now proceed to https://mandog.fun to inject your wallet into the Mandog Trench Tools Chrome Extension. `);
+            updateStatus(`✅ Payment successful!<br>TG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b><br>You can now proceed to <a href="https://mandog.fun/" target="_blank" rel="noopener noreferrer">mandog.fun</a> in order to inject your wallet into the Mandog Trench Tools Chrome Extension`);
         } else {
             showError("❌ Verification failed.");
         }
