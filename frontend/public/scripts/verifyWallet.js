@@ -11,10 +11,9 @@ updateStatus("🔹 Starting wallet verification...")
         // Check if wallet is already verified
         const validationData = await checkTgValidation(tgId);
         if (validationData.success) {
-            const daysLeft = getDaysLeft(validationData.last_updated);
-            if (daysLeft > 0) {
-                return showSuccess(`✅ TG User ${tgId} is already validated with the wallet: ${validationData.publicKey} (${daysLeft} days remaining)`);
-            }
+
+            return showSuccess(`✅ TG User ${tgId} is already validated with the wallet: ${validationData.publicKey} (${validationData.daysLeft} days remaining)`);
+            
         }
 
         try {
@@ -123,12 +122,6 @@ async function checkTgValidation(tgId) {
         console.error("❌ Error checking validation:", error);
         return { success: false };
     }
-}
-
-function getDaysLeft(lastUpdated) {
-    const lastUpdateDate = new Date(lastUpdated);
-    const now = new Date();
-    return Math.max(30 - Math.floor((now - lastUpdateDate) / (1000 * 60 * 60 * 24)), 0);
 }
 
 function getSolanaProvider() {

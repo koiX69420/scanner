@@ -54,7 +54,7 @@ router.get("/check-tgid", async (req, res) => {
         const validUntil = new Date(result.rows[0].valid_until);
         const now = new Date();
         const daysLeft = Math.floor((validUntil - now) / (1000 * 60 * 60 * 24));
-  
+
         return res.json({
             success: daysLeft > 0, 
             valid_until: result.rows[0].valid_until,
