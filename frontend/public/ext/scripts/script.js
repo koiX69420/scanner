@@ -20,6 +20,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (error) {
                 console.error("❌ Error fetching token data:", error);
             }
+        }else{
+            displayTopScannedTokens()
         }
     });
 });
@@ -52,6 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // Modify fetchTokenData to handle error animation
 async function fetchTokenData(tokenAddress) {
     const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
 
     // Get walletPublicKey from Chrome storage
     const walletAddress = await getWalletPublicKey();

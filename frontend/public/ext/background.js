@@ -3,7 +3,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === "RUN_FETCH_TOKEN_DATA") {
         console.log("🔍 Processing token:", message.token);
-
         chrome.storage.local.set({ tokenAddress: message.token }, () => {
             chrome.action.openPopup();
             sendResponse({ success: true, receivedToken: message.token });

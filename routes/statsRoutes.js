@@ -31,4 +31,42 @@ router.get('/get-token-scan-history', async (req, res) => {
   }
 });
 
+// Endpoint to get top 10 most scanned tokens in the last 6 hours
+router.get('/get-top-scanned-tokens', async (req, res) => {
+  try {
+    // SQL query to get top 10 most scanned tokens in the last 6 hours
+    const query = `
+      SELECT token_address, symbol, COUNT(*) AS scan_count
+      FROM token_scan_history
+      WHERE scan_timestamp >= NOW() - INTERVAL '6 hours'
+      GROUP BY token_address, symbol
+      ORDER BY scan_count DESC
+      LIMIT 10;
+    `;
+
+    const result = await pool.query(query);
+
+    // Start building the formatted message
+    let message = "<h3><b>Top 10 MDTT Scans (Last 6 Hours)</b></h3>";
+
+    // Check if we have results
+    if (result.rows && result.rows.length > 0) {
+      result.rows.forEach((token,index) => {
+        const displaySymbol = token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`;
+        message += `${index+1}. <b>${displaySymbol}</b> Total Scans: <b>${token.scan_count}</b> </strong> <span class="copyable"><code>${token.token_address}</code></span><br><br>`;
+      });
+    } else {
+      message += "<p>No tokens found in the last 6 hours.</p>";
+    }
+
+    // Send the formatted message as part of the response
+    res.json({
+      message: message,
+    });
+  } catch (error) {
+    console.error('Error fetching top scanned tokens:', error);
+    res.status(500).json({ error: 'Failed to fetch top scanned tokens' });
+  }
+});
+
 module.exports = router;
