@@ -218,7 +218,7 @@ async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
         console.log(result)
         if (result.success) {
             window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey:walletAddress }, "*");
-            updateStatus(`✅ Payment successful!<br>TG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b><br>You can now proceed to <a href="https://mandog.fun/" target="_blank" rel="noopener noreferrer">mandog.fun</a> in order to inject your wallet into the Mandog Trench Tools Chrome Extension`);
+            updateStatus(`✅ Payment successful!<br>Your wallet is now injected to the <b>MDTT</b> browser extention.<br>TG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b><br> You are advised to safe this message to remember which tg user and wallet you have.`);
         } else {
             // Show the specific error message returned by the backend
             showError(`❌ Verification failed: ${result.error}`);
