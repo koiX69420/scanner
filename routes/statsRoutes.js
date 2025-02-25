@@ -52,7 +52,7 @@ router.get('/get-top-scanned-tokens', async (req, res) => {
     // Check if we have results
     if (result.rows && result.rows.length > 0) {
       result.rows.forEach((token,index) => {
-        const displaySymbol = token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`;
+        const displaySymbol = token.symbol ? (token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`) : "Unknown";
         message += `${index+1}. <b>${displaySymbol}</b> Total Scans: <b>${token.scan_count}</b> </strong> <span class="copyable"><code>${token.token_address}</code></span><br><br>`;
       });
     } else {
