@@ -73,8 +73,7 @@ function handleValidatedWallet(publicKey, validationData) {
 
     if (daysLeft > 0) {
         window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey:publicKey }, "*");
-        console.log(`✅ Sent public key to extension: ${publicKey}`);
-        updateStatus(`✅ Connected & signed: ${publicKey}<br>Wallet validated! (${daysLeft} days remaining)`);
+        updateStatus(`✅ Your wallet is now injected to the MDTT browser extention.<br>Wallet <b>${publicKey}</b> verified!<br> (${daysLeft} days remaining)`);
     } else {
         updateStatus(`⚠️ Wallet validation expired.`);
     }
