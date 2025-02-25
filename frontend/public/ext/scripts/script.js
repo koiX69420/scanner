@@ -169,13 +169,11 @@ document.getElementById("tokenAddress").addEventListener("keypress", function (e
 
 function triggerAnimation() {
     const inputField = document.getElementById("tokenAddress");
-    const resultDiv = document.getElementById("result");
 
     // Add glow effect
     inputField.classList.add("glow");
 
     // Fade out result div for smooth transition
-    resultDiv.style.opacity = "0.5";
 
     // Remove glow effect after 1s
     setTimeout(() => inputField.classList.remove("glow"), 1000);
