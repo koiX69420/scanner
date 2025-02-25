@@ -283,3 +283,23 @@ br {
     to { transform: rotate(360deg); }
 }
 
+/* Positioning the Create Tab button */
+.top-right {
+    position: absolute;
+    top: 8px;
+    right: 5px;
+}
+
+#createTabBtn {
+    color: var(--button-bg);
+    background: none; /* Removes background */
+
+    border: none;
+    cursor: pointer;
+}
+
+#createTabBtn:hover {
+    background-color: transparent; /* Ensures it remains transparent */
+    color: var(--primary-color);
+
+}
