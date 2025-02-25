@@ -20,13 +20,13 @@ body {
     align-items: center;
     flex-direction: column; /* Align children vertically */
     justify-content: flex-start; /* Align to the top */
-    min-width: 400px;
+    min-width: 700px;
     height: 100vh;
 }
 
 /* Main container to hold all content */
 .main-container {
-    width: 400px;
+    width: 700px;
     height: auto;
     padding: 20px;
     box-sizing: border-box;
