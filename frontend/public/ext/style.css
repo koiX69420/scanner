@@ -121,6 +121,7 @@ h2 {
     width: 100%;
     height: 20px;
     margin-bottom: 10px;
+    font-size: 12px;
 }
 
 /* Hover effect */
@@ -290,7 +291,14 @@ br {
     right: 5px;
 }
 
-#createTabBtn {
+/* Positioning the Create Tab button */
+.top-left {
+    position: absolute;
+    top: 8px;
+    left: 5px;
+}
+
+.util {
     color: var(--button-bg);
     background: none; /* Removes background */
 
@@ -298,8 +306,19 @@ br {
     cursor: pointer;
 }
 
-#createTabBtn:hover {
+.util:hover {
     background-color: transparent; /* Ensures it remains transparent */
     color: var(--primary-color);
 
 }
+
+
+.clickable-token {
+    cursor: pointer;
+}
+
+
+.clickable-token:hover {
+    text-decoration: underline;
+}
+

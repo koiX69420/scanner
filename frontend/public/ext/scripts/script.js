@@ -99,7 +99,7 @@ async function fetchTokenData(tokenAddress) {
 
         // Create a refresh button
         const refreshButton = document.createElement("button");
-        refreshButton.textContent = "Refresh";
+        refreshButton.textContent = "Refresh Scan";
         refreshButton.className = "refresh-button button";
         refreshButton.onclick = () => fetchTokenData(tokenAddress); // Refresh on click
 

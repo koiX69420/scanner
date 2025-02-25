@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,20 +9,39 @@
     <link rel="icon" type="image/x-icon" href="/128.png">
 
 </head>
+
 <body>
 
-    <div class = "main-container">
+    <div class="main-container">
         <h2>Mandog Trench Tools</h2>
         <div class="top-right">
-            <button id="createTabBtn" title="Open in new tab">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3H21V9" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M10 14L21 3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M21 14V21H3V3H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  
-                  
+            <button id="createTabBtn" class="util" title="Open in new tab">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M15 3H21V9" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M10 14L21 3" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M21 14V21H3V3H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+
             </button>
+        </div>
+        <div class="top-left">
+            <button id="reset" class="util" title="Reset">
+                <svg fill="currentColor" height="18px" width="18px"
+                    viewBox="-48.96 -48.96 587.56 587.56"
+                    transform="matrix(-1, 0, 0, -1, 0, 0)rotate(0)">
+                    <g id="SVGRepo_iconCarrier">
+                        <g>
+                            <path
+                                d="M460.656,132.911c-58.7-122.1-212.2-166.5-331.8-104.1c-9.4,5.2-13.5,16.6-8.3,27c5.2,9.4,16.6,13.5,27,8.3 c99.9-52,227.4-14.9,276.7,86.3c65.4,134.3-19,236.7-87.4,274.6c-93.1,51.7-211.2,17.4-267.6-70.7l69.3,14.5 c10.4,2.1,21.8-4.2,23.9-15.6c2.1-10.4-4.2-21.8-15.6-23.9l-122.8-25c-20.6-2-25,16.6-23.9,22.9l15.6,123.8 c1,10.4,9.4,17.7,19.8,17.7c12.8,0,20.8-12.5,19.8-23.9l-6-50.5c57.4,70.8,170.3,131.2,307.4,68.2 C414.856,432.511,548.256,314.811,460.656,132.911z">
+                            </path>
+                        </g>
+                    </g>
+                </svg>
+            </button>
+
         </div>
         <div id="walletAddress"></div>
 
@@ -29,7 +49,7 @@
             <input type="text" id="tokenAddress" placeholder="Enter Solana Token Address">
             <button id="scanButton" class="button">Scan</button>
         </div>
-        
+
         <div id="result"></div>
     </div>
     <script src="scripts/suggestions.js"></script> <!-- Move JS logic to an external file -->
@@ -38,4 +58,5 @@
     <script src="scripts/createTab.js"></script> <!-- Move JS logic to an external file -->
 
 </body>
+
 </html>

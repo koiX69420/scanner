@@ -34,7 +34,6 @@ router.get('/get-token-scan-history', async (req, res) => {
 // Endpoint to get top 10 most scanned tokens in the last 6 hours
 router.get('/get-top-scanned-tokens', async (req, res) => {
   try {
-    // SQL query to get top 10 most scanned tokens in the last 6 hours
     const query = `
       SELECT token_address, symbol, COUNT(*) AS scan_count
       FROM token_scan_history
@@ -46,27 +45,30 @@ router.get('/get-top-scanned-tokens', async (req, res) => {
 
     const result = await pool.query(query);
 
-    // Start building the formatted message
     let message = "<h3><b>Top 10 MDTT Scans (Last 6 Hours)</b></h3>";
-    console.log(result)
-    // Check if we have results
+
     if (result.rows && result.rows.length > 0) {
-      result.rows.forEach((token,index) => {
+      result.rows.forEach((token, index) => {
         const displaySymbol = token.symbol ? (token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`) : "Unknown";
-        message += `${index+1}. <b>${displaySymbol}</b> Total Scans: <b>${token.scan_count}</b> </strong> <span class="copyable"><code>${token.token_address}</code></span><br><br>`;
+
+        message += `
+          ${index + 1}. <b>
+          <span class="clickable-token" data-address="${token.token_address}">
+            ${displaySymbol}
+          </span></b> 
+          Total Scans: <b>${token.scan_count}</b> 
+          <span class="copyable"><code>${token.token_address}</code></span><br><br>`;
       });
     } else {
       message += "<p>No tokens found in the last 6 hours.</p>";
     }
 
-    // Send the formatted message as part of the response
-    res.json({
-      message: message,
-    });
+    res.json({ message: message });
   } catch (error) {
     console.error('Error fetching top scanned tokens:', error);
     res.status(500).json({ error: 'Failed to fetch top scanned tokens' });
   }
 });
+
 
 module.exports = router;
