@@ -4,10 +4,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "RUN_FETCH_TOKEN_DATA") {
         console.log("🔍 Processing token:", message.token);
 
-        // Respond back to content.js
-        sendResponse({ success: true, receivedToken: message.token });
-        chrome.tabs.create({
-            url: chrome.runtime.getURL(`popup.html?token=${message.token}`)
+        chrome.storage.local.set({ tokenAddress: message.token }, () => {
+            chrome.action.openPopup();
+            sendResponse({ success: true, receivedToken: message.token });
         });
         return true; // Important for async responses
     }

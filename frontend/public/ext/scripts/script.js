@@ -4,15 +4,24 @@ function isValidSolanaAddress(address) {
     return base58Regex.test(address);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-    // Extract the token from the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
+document.addEventListener("DOMContentLoaded", async () => {
+    chrome.storage.local.get("tokenAddress", async (data) => {
+        if (data.tokenAddress) {
+            console.log("🚀 Fetching token data for:", data.tokenAddress);
+            
+            try {
+                await fetchTokenData(data.tokenAddress); // Call your function
 
-    if (token) {
-        console.log("📡 Token received:", token);
-        fetchTokenData(token); // Call your function in script.js
-    }
+                // ✅ Clear token from storage after successful fetch
+                chrome.storage.local.remove("tokenAddress", () => {
+                    console.log("🗑️ Cleared token from local storage");
+                });
+
+            } catch (error) {
+                console.error("❌ Error fetching token data:", error);
+            }
+        }
+    });
 });
 
 // Wait for the page to load completely
