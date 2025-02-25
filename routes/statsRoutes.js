@@ -48,7 +48,7 @@ router.get('/get-top-scanned-tokens', async (req, res) => {
 
     // Start building the formatted message
     let message = "<h3><b>Top 10 MDTT Scans (Last 6 Hours)</b></h3>";
-
+    console.log(result)
     // Check if we have results
     if (result.rows && result.rows.length > 0) {
       result.rows.forEach((token,index) => {
