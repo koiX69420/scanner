@@ -1,19 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Mandog Trench Tools",
-  "version": "1.0",
+  "version": "1.2",
   "description": "Scan Solana tokens instantly!",
   "author": {
     "email": "info@mandog.fun"
   },
   "permissions": [
-    "activeTab",
-    "scripting",
     "storage"
   ],
   "host_permissions": [
-    "https://mandog.fun/",
-    "http://localhost:5000/"
+    "https://mandog.fun/"
   ],
   "background": {
     "service_worker": "background.js"
@@ -25,7 +22,6 @@
         "https://bullx.io/*",
         "https://pump.fun/coin/*",
         "https://axiom.trade/*",
-        "http://localhost:5000/*",
         "https://mandog.fun/*"
       ],
       "js": [
