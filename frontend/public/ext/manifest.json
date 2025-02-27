@@ -46,7 +46,8 @@
         "https://photon-sol.tinyastro.io/*",
         "https://bullx.io/*",
         "https://pump.fun/*",
-        "https://axiom.trade/*"
+        "https://axiom.trade/*",
+        "http://localhost:5000/*"
       ]
     }
   ],

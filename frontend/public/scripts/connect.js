@@ -81,8 +81,8 @@ function handleValidatedWallet(publicKey, validationData) {
 
 // ✅ Handle an unvalidated wallet
 function handleUnvalidatedWallet(publicKey) {
-    updateStatus(`⛔ ${publicKey} not validated or verification expired.<br>
-        Verify via our official Telegram bot <a href="https://t.me/ManDogMFbot?start=verify" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> using /verify.`);
+    window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey:publicKey }, "*");
+    updateStatus(`✅ Your wallet is now injected to the MDTT browser extention.<br>⛔ BUT ${publicKey} is not verified with an active subscription. You may only use the extention with over [TBA] Mandog Tokens in your wallet`);
 }
 
 // ✅ Calculate remaining validation days

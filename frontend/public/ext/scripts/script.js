@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     chrome.storage.local.get("tokenAddress", async (data) => {
         if (data.tokenAddress) {
             console.log("🚀 Fetching token data for:", data.tokenAddress);
-            
+
             try {
                 await fetchTokenData(data.tokenAddress); // Call your function
 
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (error) {
                 console.error("❌ Error fetching token data:", error);
             }
-        }else{
+        } else {
             displayTopScannedTokens()
         }
     });
@@ -98,47 +98,48 @@ async function fetchTokenData(tokenAddress) {
         });
 
         const data = await response.json();
+        if (data.success) {
+            console.log(data)
+            // Create a refresh button
+            const refreshButton = document.createElement("button");
+            refreshButton.textContent = "Refresh Scan";
+            refreshButton.className = "refresh-button button";
+            refreshButton.onclick = () => fetchTokenData(tokenAddress); // Refresh on click
 
-        // Create a refresh button
-        const refreshButton = document.createElement("button");
-        refreshButton.textContent = "Refresh Scan";
-        refreshButton.className = "refresh-button button";
-        refreshButton.onclick = () => fetchTokenData(tokenAddress); // Refresh on click
+            // Append refresh button to resultDiv
+            resultDiv.innerHTML = "";
+            resultDiv.appendChild(refreshButton);
 
-        // Append refresh button to resultDiv
-        resultDiv.innerHTML = "";
-        resultDiv.appendChild(refreshButton);
+            // Append result content
+            const resultContent = document.createElement("div");
+            resultContent.innerHTML = convertTelegramTextToHTML(data.response.text);
+            resultDiv.appendChild(resultContent);
 
-        // Append result content
-        const resultContent = document.createElement("div");
-        resultContent.innerHTML = data.error ? `${data.error}` : convertTelegramTextToHTML(data.text);
-        resultDiv.appendChild(resultContent);
-
-        const match = data.text.match(/\[\$(.*?)\]/);
-        let symbol =""
-        if (match && match[1]) {
-            symbol = `$${match[1]}`; // Update page title
-        }
-        saveTokenAddressToLocalStorage(tokenAddress,symbol);
-
-        if (!data.error) {
-            document.getElementById("tokenAddress").value = "";
+            const match = data.response.text.match(/\[\$(.*?)\]/);
+            let symbol = ""
+            if (match && match[1]) {
+                symbol = `$${match[1]}`; // Update page title
+            }
+            saveTokenAddressToLocalStorage(tokenAddress, symbol);
         } else {
-            shakeInput();
+            resultDiv.innerHTML = "";
+            const resultContent = document.createElement("div");
+            resultContent.innerHTML = data.error
+            resultDiv.appendChild(resultContent);
         }
     } catch (error) {
-        resultDiv.innerHTML = "❌ Failed to fetch data.";
+        resultDiv.innerHTML = `❌ Failed to fetch data. ${error}`;
         shakeInput();
     }
 }
 
-function saveTokenAddressToLocalStorage(tokenAddress,symbol) {
+function saveTokenAddressToLocalStorage(tokenAddress, symbol) {
     // Retrieve the scannedTokens array from chrome storage
     chrome.storage.local.get("scannedTokens", (result) => {
         let scannedTokens = result.scannedTokens || [];  // Default to empty array if not found
 
         // Add the new token address to the front of the list
-        scannedTokens.unshift({tokenAddress,symbol,timestamp:new Date(Date.now()).toLocaleString()});
+        scannedTokens.unshift({ tokenAddress, symbol, timestamp: new Date(Date.now()).toLocaleString() });
 
         // Keep only the 10 most recent scanned tokens
         if (scannedTokens.length > 20) {
@@ -171,7 +172,7 @@ function convertTelegramTextToHTML(text) {
 
     // Convert bold markdown
     text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") // Bold
-               .replace(/\*(.*?)\*/g, "<b>$1</b>"); // Bold fallback
+        .replace(/\*(.*?)\*/g, "<b>$1</b>"); // Bold fallback
 
     // Convert `_italic_` (without affecting links)
     text = text.replace(/_(.*?)_/g, "<i>$1</i>");

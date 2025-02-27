@@ -119,10 +119,38 @@ async function fetchSolTransfers(walletAddress) {
   return await makeApiCall(url) || [];
 }
 
-// Function to fetch Sol transfers for a wallet address
+// Function to fetch token accounts with pagination for a wallet address
 async function fetchTokenAccounts(walletAddress) {
-  const url = `https://pro-api.solscan.io/v2.0/account/token-accounts?address=${walletAddress}&type=token&page=1&page_size=40`;
-  return await makeApiCall(url) || [];
+  const pageSize = 40; // Number of items per page
+  let page = 1; // Start with the first page
+  let allTokenAccounts = []; // Array to store all token accounts
+
+  while (true) {
+    // Construct the URL with pagination parameters
+    const url = `https://pro-api.solscan.io/v2.0/account/token-accounts?address=${walletAddress}&type=token&page=${page}&page_size=${pageSize}`;
+
+    // Fetch the data from the API
+    const response = await makeApiCall(url);
+    
+    // If the response is empty or no more results, break the loop
+    if (!response || response.length === 0) {
+      break;
+    }
+    
+    // Add the current page's results to the allTokenAccounts array
+    allTokenAccounts = allTokenAccounts.concat(response);
+
+    // Check if there are more pages. This depends on how the API signals it. 
+    // If there's a `next_page` or equivalent in the response, we continue; otherwise, break.
+    if (!response.hasOwnProperty('next_page') || !response.next_page) {
+      break; // No more pages
+    }
+
+    // Increment the page number for the next iteration
+    page++;
+  }
+
+  return allTokenAccounts; // Return the concatenated list of all token accounts
 }
 
 // Function to fetch token markets for a token address

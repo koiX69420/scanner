@@ -33,6 +33,8 @@ router.get('/get-token-scan-history', async (req, res) => {
 
 // Endpoint to get top 10 most scanned tokens in the last 6 hours
 router.get('/get-top-scanned-tokens', async (req, res) => {
+  return     res.status(500).json({ error: 'Failed to fetch top scanned tokens' });
+
   try {
     const query = `
       SELECT token_address, symbol, COUNT(*) AS scan_count
