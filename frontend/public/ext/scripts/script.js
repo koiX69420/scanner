@@ -56,6 +56,8 @@ async function fetchTokenData(tokenAddress) {
     const resultDiv = document.getElementById("result");
     resultDiv.innerHTML = "";
 
+    const trendingDiv = document.getElementById("trending");
+    trendingDiv.innerHTML = "";
     // Get walletPublicKey from Chrome storage
     const walletAddress = await getWalletPublicKey();
     if (!walletAddress) {
@@ -112,6 +114,13 @@ async function fetchTokenData(tokenAddress) {
         resultContent.innerHTML = data.error ? `${data.error}` : convertTelegramTextToHTML(data.text);
         resultDiv.appendChild(resultContent);
 
+        const match = data.text.match(/\[\$(.*?)\]/);
+        let symbol =""
+        if (match && match[1]) {
+            symbol = `$${match[1]}`; // Update page title
+        }
+        saveTokenAddressToLocalStorage(tokenAddress,symbol);
+
         if (!data.error) {
             document.getElementById("tokenAddress").value = "";
         } else {
@@ -121,6 +130,24 @@ async function fetchTokenData(tokenAddress) {
         resultDiv.innerHTML = "❌ Failed to fetch data.";
         shakeInput();
     }
+}
+
+function saveTokenAddressToLocalStorage(tokenAddress,symbol) {
+    // Retrieve the scannedTokens array from chrome storage
+    chrome.storage.local.get("scannedTokens", (result) => {
+        let scannedTokens = result.scannedTokens || [];  // Default to empty array if not found
+
+        // Add the new token address to the front of the list
+        scannedTokens.unshift({tokenAddress,symbol,timestamp:new Date(Date.now()).toLocaleString()});
+
+        // Keep only the 10 most recent scanned tokens
+        if (scannedTokens.length > 20) {
+            scannedTokens.pop();
+        }
+
+        // Save the updated list back to localStorage (use the native JavaScript array directly)
+        chrome.storage.local.set({ "scannedTokens": scannedTokens });
+    });
 }
 
 // Helper function to get walletPublicKey from Chrome storage

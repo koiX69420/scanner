@@ -10,7 +10,7 @@
     --button-hover: #03DAC6;
     --spacing: 10px;
     --border-radius: 5px;
-    --code-color:#ffcc00;
+    --code-color: #ffcc00;
 }
 
 body {
@@ -20,8 +20,10 @@ body {
     margin: 0;
     display: flex;
     align-items: center;
-    flex-direction: column; /* Align children vertically */
-    justify-content: flex-start; /* Align to the top */
+    flex-direction: column;
+    /* Align children vertically */
+    justify-content: flex-start;
+    /* Align to the top */
     min-width: 400px;
     height: 100vh;
 }
@@ -37,9 +39,12 @@ h2 {
     text-align: center;
     margin-bottom: 0px;
 }
+
 #walletAddress {
-    background-color: #0A1627; /* Dark background for contrast */
-    color: #228b81; /* Solana's accent color */
+    background-color: #0A1627;
+    /* Dark background for contrast */
+    color: #228b81;
+    /* Solana's accent color */
     padding: 5px;
     border-radius: var(--border-radius);
     text-align: center;
@@ -50,10 +55,13 @@ h2 {
     margin-bottom: 20px;
     margin: 0 auto;
 }
+
 /* Ensure input-container & result have the same width */
-.input-container, #result {
+.input-container,
+#result {
     width: 100%;
-    box-sizing: border-box; /* Ensures padding doesn't affect width */
+    box-sizing: border-box;
+    /* Ensures padding doesn't affect width */
     padding: var(--spacing);
     background-color: var(--result-bg);
     padding: 10px;
@@ -176,11 +184,25 @@ br {
 }
 
 @keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    50% {
+        transform: translateX(5px);
+    }
+
+    75% {
+        transform: translateX(-5px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
 }
 
 /* Smooth fade-in effect for results */
@@ -189,12 +211,18 @@ br {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .rotate {
-    display: block; /* Ensure it's visible */
+    display: block;
+    /* Ensure it's visible */
     animation: spin 1s linear infinite;
 }
 
@@ -243,23 +271,30 @@ br {
 
 /* Modern and Clean Scrollbar */
 ::-webkit-scrollbar {
-    width: 10px;  /* Horizontal scrollbar width */
-    height: 10px; /* Vertical scrollbar height */
+    width: 10px;
+    /* Horizontal scrollbar width */
+    height: 10px;
+    /* Vertical scrollbar height */
 }
 
 ::-webkit-scrollbar-track {
-    background-color: #333;  /* Track color */
-    border-radius: 10px;  /* Rounded corners for the track */
+    background-color: #333;
+    /* Track color */
+    border-radius: 10px;
+    /* Rounded corners for the track */
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color); /* Thumb color */
-    border-radius: 10px;  /* Rounded corners for the thumb */
+    background-color: var(--primary-color);
+    /* Thumb color */
+    border-radius: 10px;
+    /* Rounded corners for the thumb */
     transition: background-color 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #03a89c; /* Slightly darker shade for the thumb when hovered */
+    background-color: #03a89c;
+    /* Slightly darker shade for the thumb when hovered */
 }
 
 .loading-container {
@@ -280,8 +315,13 @@ br {
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Positioning the Create Tab button */
@@ -298,16 +338,87 @@ br {
     left: 5px;
 }
 
+/* Positioning the Create Tab button */
+.top-left-two {
+    position: absolute;
+    top: 30px;
+    left: 5px;
+}
+
+#last-scans {
+    position: absolute;
+    top: 20px;
+    /* Adjust based on button height */
+    left: 0;
+    background: var(--result-bg);
+    color: var(--text-color);
+    border: 1px solid var(--code-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4);
+    padding: var(--spacing);
+    min-width: 220px;
+    max-width: 280px;
+    display: none;
+    /* Initially hidden */
+    z-index: 100;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+    overflow: scroll;
+    max-height: 200px;
+}
+
+#last-scans h3 {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+}
+
+#last-scans.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+
+}
+
+.token-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+}
+
+.token-list .token-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+    cursor: pointer;
+}
+
+.token-list .token-entry:hover {
+    background: var(--button-hover);
+    color: #000;
+    border-radius: var(--border-radius);
+}
+
+.token-list .token-entry:hover b {
+    color: #000;
+    /* Set bold text to black */
+}
+
 .util {
     color: var(--button-bg);
-    background: none; /* Removes background */
+    background: none;
+    /* Removes background */
 
     border: none;
     cursor: pointer;
 }
 
 .util:hover {
-    background-color: transparent; /* Ensures it remains transparent */
+    background-color: transparent;
+    /* Ensures it remains transparent */
     color: var(--primary-color);
 
 }
@@ -322,3 +433,25 @@ br {
     text-decoration: underline;
 }
 
+#trending {
+    margin: 10px;
+}
+
+#trending h3 {
+    width: 100%;
+    justify-content: center;
+    text-align: left;
+    color: white;
+    margin: 10px;
+}
+
+#trending.token-list .token-entry {
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+    cursor: pointer;
+}

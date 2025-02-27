@@ -45,25 +45,20 @@ router.get('/get-top-scanned-tokens', async (req, res) => {
 
     const result = await pool.query(query);
 
-    let message = "<h3><b>Top 10 MDTT Scans (Last 6 Hours)</b></h3>";
-
+    let tokenList = ""
     if (result.rows && result.rows.length > 0) {
-      result.rows.forEach((token, index) => {
-        const displaySymbol = token.symbol ? (token.symbol.startsWith('$') ? token.symbol : `$${token.symbol}`) : "Unknown";
-
-        message += `
-          ${index + 1}. <b>
-          <span class="clickable-token" data-address="${token.token_address}">
-            ${displaySymbol}
-          </span></b> 
-          Total Scans: <b>${token.scan_count}</b> 
-          <span class="copyable"><code>${token.token_address}</code></span><br><br>`;
-      });
-    } else {
-      message += "<p>No tokens found in the last 6 hours.</p>";
+      tokenList = result.rows.map(({ token_address, symbol, scan_count },index) => {
+        return `<div class="token-entry" data-address="${token_address}"><p>${index+1}.<b>${symbol}</b> Total Scans:<b>${scan_count}</b></p></div>`;
+      }).join('');
     }
 
-    res.json({ message: message });
+    const ret = `
+    <h3>Top 10 MDTT Scans (Last 6 Hours)</h3>
+    <div class="token-list">
+      ${tokenList}
+    </div>`
+
+    res.json({ message: ret });
   } catch (error) {
     console.error('Error fetching top scanned tokens:', error);
     res.status(500).json({ error: 'Failed to fetch top scanned tokens' });
