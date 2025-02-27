@@ -341,8 +341,8 @@ br {
 /* Positioning the Create Tab button */
 .top-left-two {
     position: absolute;
-    top: 30px;
-    left: 5px;
+    top: 8px;
+    left: 30px;
 }
 
 #last-scans {
