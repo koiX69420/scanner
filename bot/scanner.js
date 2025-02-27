@@ -35,7 +35,8 @@ const {
   calculateClusterPercentages,
   formatMarketCap,
   formatTimestamp,
-  generateTooltip
+  generateTooltip,
+  timeAgo
 } = require('./util');
 
 
@@ -176,7 +177,7 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath) {
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  let message = `🔹 *MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
   let currentMarketCap = metadata.market_cap; // Default to metadata value
   const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
   const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
@@ -194,20 +195,24 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 
   let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
   
-  // Check if ATH is available and non-zero
-  if (ath.allTimeHigh > 0) {
-    athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
-  
-    // Calculate percentage difference between the current market cap and the ATH market cap
-    const marketCapDifference = ((currentMarketCap - (ath.allTimeHigh * metadata.supply / 1e6)) / (ath.allTimeHigh * metadata.supply / 1e6)) * 100;
-    const percentageDifference = marketCapDifference.toFixed(2);
-  
-    // Add market cap information in a visually appealing way
-    message += ` *${formattedMarketCap}* MC | ATH: *${athMarketCap}* MC | *${percentageDifference}*%`;
-  } else {
-    // If ATH is 0 or not available, just show the current market cap
-    message += ` *${formattedMarketCap}* MC`;
-  }
+// Check if ATH is available and non-zero
+if (ath.allTimeHigh > 0) {
+  athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
+
+  // Calculate percentage difference
+  const athMarketCapValue = (ath.allTimeHigh * metadata.supply) / 1e6;
+  const marketCapDifference = ((currentMarketCap - athMarketCapValue) / athMarketCapValue) * 100;
+  const percentageDifference = marketCapDifference.toFixed(0); // Rounded percentage
+
+  // Format time ago
+  const timeSinceAth = timeAgo(ath.timestamp);
+
+  // Final formatted message
+  message += `💎 MC: *${formattedMarketCap}* ⇨ ATH: *${athMarketCap}* *${percentageDifference}*% |*${timeSinceAth}*|`;
+} else {
+  // If ATH is 0 or not available, just show the current market cap
+  message += `💎 MC: ${formattedMarketCap}`;
+}
 
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
 

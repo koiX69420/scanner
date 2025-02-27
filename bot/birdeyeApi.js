@@ -16,20 +16,25 @@ async function fetchAth(tokenAddress,created_time) {
         // Fetch data from Birdeye API
         const response = await fetch(url, options);
         const data = await response.json();
-        if (data.success) {
-            // Find the all-time high (max value) from the items array
-            const allTimeHigh = data.data.items.reduce((max, item) => {
-                return item.value > max ? item.value : max;
-            }, 0);
 
-            return { allTimeHigh };
+        if (data.success) {
+            // Find the all-time high (max value) and its timestamp
+            const allTimeHighData = data.data.items.reduce((maxItem, item) => {
+                return item.value > maxItem.value ? item : maxItem;
+            }, { unixTime: 0, value: 0 });
+
+            return {
+                allTimeHigh: allTimeHighData.value,
+                timestamp: allTimeHighData.unixTime
+            };
         } else {
             throw new Error("Failed to fetch data from Birdeye API.");
         }
     } catch (error) {
         console.error(`❌ Error fetching all-time high for ${tokenAddress}:`, error.message);
         return {
-            allTimeHigh: 0
+            allTimeHigh: 0,
+            timestamp: null
         };
     }
 }
