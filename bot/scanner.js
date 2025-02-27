@@ -361,12 +361,14 @@ function generateTop20Holders(holdersData, clusterPercentages, metadata) {
 
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
     const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
+    const lastSell = holder["Last Sell"] ? `|${timeAgo(new Date(holder["Last Sell"]).getTime() / 1000)}|` : "";
+
     let isDev = ""
     if (metadata.creator) {
       if (holder.Address === metadata.creator) isDev = `*(dev)*`;
     }
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${isDev}${alertEmoji}${freshEmoji}${clusterInfo}\n`;
-    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
+    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji} ${lastSell}\n\n`;
   });
 
   return top20Mfers + "\n";
@@ -407,7 +409,8 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
         const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
         const rankingText = ranking > 0 ? `#*${ranking}*` : "";
         const trendEmoji = parseFloat(recipientData["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
-        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%* ${trendEmoji}\n`;
+        const lastSell = recipientData["Last Sell"] ? `|${timeAgo(new Date(recipientData["Last Sell"]).getTime() / 1000)}|` : "";
+        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%* ${trendEmoji} ${lastSell}\n`;
       });
     }
   });
@@ -460,7 +463,6 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-  console.log(metadata)
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));

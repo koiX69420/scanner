@@ -75,22 +75,35 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
   const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
   const activities = await makeApiCall(url);
   let transactionCount = 0;
-  if (!activities) return { buys: 0, sells: 0, totalBought: 0, totalSold: 0 };
+  if (!activities) return { buys: 0, sells: 0, totalBought: 0, totalSold: 0, lastSell: "" };
 
   let buys = 0, sells = 0, totalBought = 0, totalSold = 0;
+  let lastSell = ""; // Store the most recent sell transaction
+
   activities.forEach(tx => {
     transactionCount+=1;
     (Array.isArray(tx.routers) ? tx.routers : [tx.routers]).forEach(router => {
       if (router.token1 === tokenAddress) {
         sells++;
         totalSold += router.amount1 || 0;
+        if (!lastSell || tx.block_time > lastSell.block_time) {
+          lastSell = {
+            trans_id: tx.trans_id,
+            block_time: tx.block_time,
+            value: router.amount1,
+            time: tx.time,
+            token1: router.token1,
+            token2: router.token2,
+          };
+        }
       } else if (router.token2 === tokenAddress) {
         buys++;
         totalBought += router.amount2 || 0;
       }
     });
   });
-  return { walletAddress,buys, sells, totalBought, totalSold,transactionCount };
+  return { walletAddress,buys, sells, totalBought, totalSold,transactionCount, lastSell: lastSell ? lastSell.time : ""
+  };
 }
 
 // Function to fetch token metadata
@@ -154,16 +167,16 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
   if (!holders.length) return [];
 
   const defiResults = await Promise.all(holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress)));
-
   // Directly map defiResults to the final return format
-  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount }, index) => ({
+  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount,lastSell }, index) => ({
     Address: walletAddress,
     "Current Holding (%)": ((holders[index].amount / supply) * 100).toFixed(2),
     "Total Buys": buys,
     "Total Sells": sells,
     "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
     "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-    "Transaction Count": transactionCount
+    "Transaction Count": transactionCount,
+    "Last Sell": lastSell
   }));
 }
 

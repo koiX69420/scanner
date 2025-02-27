@@ -84,7 +84,7 @@ function formatTimestamp(timestamp) {
   // Generates the Tooltip section (only for the detailed report)
 function generateTooltip() {
   let tooltip = "\n*Tooltip*\n";
-  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) \n\n`;
+  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) (|1h|:last sell) \n\n`;
   tooltip += "_🔍 What is a Sus Wallet?_\n";
   tooltip += "⚠️ _A wallet is flagged as suspicious if:_\n";
   tooltip += "  - _It received tokens but has 0 buys._\n";
