@@ -75,22 +75,35 @@ async function fetchDefiActivities(walletAddress, tokenAddress) {
   const url = `https://pro-api.solscan.io/v2.0/account/defi/activities?address=${encodeURIComponent(walletAddress)}&activity_type[]=ACTIVITY_TOKEN_SWAP&activity_type[]=ACTIVITY_AGG_TOKEN_SWAP&page=1&page_size=100&sort_by=block_time&sort_order=desc`;
   const activities = await makeApiCall(url);
   let transactionCount = 0;
-  if (!activities) return { buys: 0, sells: 0, totalBought: 0, totalSold: 0 };
+  if (!activities) return { buys: 0, sells: 0, totalBought: 0, totalSold: 0, lastSell: "" };
 
   let buys = 0, sells = 0, totalBought = 0, totalSold = 0;
+  let lastSell = ""; // Store the most recent sell transaction
+
   activities.forEach(tx => {
     transactionCount+=1;
     (Array.isArray(tx.routers) ? tx.routers : [tx.routers]).forEach(router => {
       if (router.token1 === tokenAddress) {
         sells++;
         totalSold += router.amount1 || 0;
+        if (!lastSell || tx.block_time > lastSell.block_time) {
+          lastSell = {
+            trans_id: tx.trans_id,
+            block_time: tx.block_time,
+            value: router.amount1,
+            time: tx.time,
+            token1: router.token1,
+            token2: router.token2,
+          };
+        }
       } else if (router.token2 === tokenAddress) {
         buys++;
         totalBought += router.amount2 || 0;
       }
     });
   });
-  return { walletAddress,buys, sells, totalBought, totalSold,transactionCount };
+  return { walletAddress,buys, sells, totalBought, totalSold,transactionCount, lastSell: lastSell ? lastSell.time : ""
+  };
 }
 
 // Function to fetch token metadata
@@ -106,10 +119,38 @@ async function fetchSolTransfers(walletAddress) {
   return await makeApiCall(url) || [];
 }
 
-// Function to fetch Sol transfers for a wallet address
+// Function to fetch token accounts with pagination for a wallet address
 async function fetchTokenAccounts(walletAddress) {
-  const url = `https://pro-api.solscan.io/v2.0/account/token-accounts?address=${walletAddress}&type=token&page=1&page_size=40`;
-  return await makeApiCall(url) || [];
+  const pageSize = 40; // Number of items per page
+  let page = 1; // Start with the first page
+  let allTokenAccounts = []; // Array to store all token accounts
+
+  while (true) {
+    // Construct the URL with pagination parameters
+    const url = `https://pro-api.solscan.io/v2.0/account/token-accounts?address=${walletAddress}&type=token&page=${page}&page_size=${pageSize}`;
+
+    // Fetch the data from the API
+    const response = await makeApiCall(url);
+    
+    // If the response is empty or no more results, break the loop
+    if (!response || response.length === 0) {
+      break;
+    }
+    
+    // Add the current page's results to the allTokenAccounts array
+    allTokenAccounts = allTokenAccounts.concat(response);
+
+    // Check if there are more pages. This depends on how the API signals it. 
+    // If there's a `next_page` or equivalent in the response, we continue; otherwise, break.
+    if (!response.hasOwnProperty('next_page') || !response.next_page) {
+      break; // No more pages
+    }
+
+    // Increment the page number for the next iteration
+    page++;
+  }
+
+  return allTokenAccounts; // Return the concatenated list of all token accounts
 }
 
 // Function to fetch token markets for a token address
@@ -154,16 +195,16 @@ async function getTokenHolderData(tokenAddress, supply, maxHolders, pageSize) {
   if (!holders.length) return [];
 
   const defiResults = await Promise.all(holders.map(holder => fetchDefiActivities(holder.owner, tokenAddress)));
-
   // Directly map defiResults to the final return format
-  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount }, index) => ({
+  return defiResults.map(({ walletAddress, buys, sells, totalBought, totalSold, transactionCount,lastSell }, index) => ({
     Address: walletAddress,
     "Current Holding (%)": ((holders[index].amount / supply) * 100).toFixed(2),
     "Total Buys": buys,
     "Total Sells": sells,
     "Total Bought (%)": ((totalBought / supply) * 100).toFixed(2),
     "Total Sold (%)": ((totalSold / supply) * 100).toFixed(2),
-    "Transaction Count": transactionCount
+    "Transaction Count": transactionCount,
+    "Last Sell": lastSell
   }));
 }
 

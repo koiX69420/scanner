@@ -7,13 +7,10 @@
     "email": "info@mandog.fun"
   },
   "permissions": [
-    "activeTab",
-    "scripting",
     "storage"
   ],
   "host_permissions": [
-    "https://mandog.fun/",
-    "http://localhost:5000/"
+    "https://mandog.fun/"
   ],
   "background": {
     "service_worker": "background.js"
@@ -25,8 +22,8 @@
         "https://bullx.io/*",
         "https://pump.fun/coin/*",
         "https://axiom.trade/*",
-        "http://localhost:5000/*",
-        "https://mandog.fun/*"
+        "https://mandog.fun/*",
+        "http://localhost:5000/*"
       ],
       "js": [
         "content.js"
@@ -49,7 +46,8 @@
         "https://photon-sol.tinyastro.io/*",
         "https://bullx.io/*",
         "https://pump.fun/*",
-        "https://axiom.trade/*"
+        "https://axiom.trade/*",
+        "http://localhost:5000/*"
       ]
     }
   ],

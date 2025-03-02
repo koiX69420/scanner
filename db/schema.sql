@@ -23,8 +23,12 @@ CREATE TABLE IF NOT EXISTS token_scan_history (
 );
 
 -- Index on token_address for quicker lookups
-CREATE INDEX IF NOT EXISTS idx_token_address ON token_scan_history (token_address);
+-- Composite index on (scan_timestamp, token_address, symbol) for efficient filtering and grouping
+CREATE INDEX IF NOT EXISTS idx_scan_timestamp_token_symbol 
+ON token_scan_history (scan_timestamp DESC, token_address, symbol);
 
+-- Optionally, index on scan_timestamp for better filtering
+CREATE INDEX IF NOT EXISTS idx_scan_timestamp ON token_scan_history (scan_timestamp DESC);
 -- -- Insert 10,000 random records into token_scan_history
 -- DO $$ 
 -- BEGIN

@@ -84,7 +84,7 @@ function formatTimestamp(timestamp) {
   // Generates the Tooltip section (only for the detailed report)
 function generateTooltip() {
   let tooltip = "\n*Tooltip*\n";
-  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) \n\n`;
+  tooltip += `Current Holding (%) Address\n\t\t\t\t⬆️ Buys/\u200BSells ⬇️ \t|\t Total Bought (%)/\u200BTotal Sold (%) (🟢: hasn't sold) (🔴:has sold) (|1h|:last sell) \n\n`;
   tooltip += "_🔍 What is a Sus Wallet?_\n";
   tooltip += "⚠️ _A wallet is flagged as suspicious if:_\n";
   tooltip += "  - _It received tokens but has 0 buys._\n";
@@ -93,9 +93,22 @@ function generateTooltip() {
   tooltip += "  - _It has less than 10 defi swap transactions_ 🌿\n";
   return tooltip;
 }
+
+// Function to calculate time difference from Unix timestamp
+function timeAgo(unixTime) {
+  const now = Math.floor(Date.now() / 1000); // Get current Unix timestamp
+  const diffSeconds = now - unixTime;
+
+  if (diffSeconds < 60) return `${diffSeconds}s`;  // Less than a minute
+  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m`; // Minutes
+  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h`; // Hours
+  return `${Math.floor(diffSeconds / 86400)}d`; // Days
+}
+
 module.exports = {
     calculateClusterPercentages,
     formatMarketCap,
     formatTimestamp,
-    generateTooltip
+    generateTooltip,
+    timeAgo
   };

@@ -35,7 +35,8 @@ const {
   calculateClusterPercentages,
   formatMarketCap,
   formatTimestamp,
-  generateTooltip
+  generateTooltip,
+  timeAgo
 } = require('./util');
 
 
@@ -166,6 +167,12 @@ function extractSocialLinks(metadata, dexSocials) {
   return { socials, isBonded, totalVolume, priceChange };
 }
 
+function generateTwitterIntent(message) {
+  const twitterBaseUrl = "https://x.com/intent/tweet";
+  const encodedMessage = encodeURIComponent(message); // Properly encode the message
+  return `${twitterBaseUrl}?text=${encodedMessage}`;
+}
+
 function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {
   return `*📊 Top 20 Holder Summary (${holdingAmount.toFixed(2)}%)*\n`
     + `    ⚠️ \t*${alertCount}* Sus Wallet${alertCount === 1 ? '' : 's'}\n`
@@ -175,8 +182,21 @@ function formatHolderSummary(alertCount, bundled, freshBundled, freshNotBundled,
     + `    ❌ \t*${zeroBuys}* No Purchase Transactions\n`
     + `    🔴 \t*${selling}* Selling Wallets\n\n`;
 }
+
+function formatHolderSummaryIntent(alertCount, bundled, freshBundled, freshNotBundled, zeroBuys, selling, holdingAmount) {
+  return `📊 Top 20 Holder Summary |${holdingAmount.toFixed(2)}\%|\n`
+    + `    ⚠️ ${alertCount} Sus Wallet${alertCount === 1 ? '' : 's'}\n`
+    + `    🧩 ${bundled} Bundled Wallets\n`
+    + `    🆕 ${freshBundled} Bundled Fresh Wallets\n`
+    + `    🌿 ${freshNotBundled} Fresh Wallets | Not Bundled\n`
+    + `    ❌ ${zeroBuys} No Purchase Transactions\n`
+    + `    🔴 ${selling} Selling Wallets\n\n`;
+}
+
+
 function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath) {
-  let message = `🔹*MF Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  let message = `🔹 *MDTT Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+  let twitterIntent =`@MandogMF Analysis: $${metadata.symbol}\n`
   let currentMarketCap = metadata.market_cap; // Default to metadata value
   const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
   const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
@@ -194,23 +214,29 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
 
   let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
   
-  // Check if ATH is available and non-zero
-  if (ath.allTimeHigh > 0) {
-    athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
-  
-    // Calculate percentage difference between the current market cap and the ATH market cap
-    const marketCapDifference = ((currentMarketCap - (ath.allTimeHigh * metadata.supply / 1e6)) / (ath.allTimeHigh * metadata.supply / 1e6)) * 100;
-    const percentageDifference = marketCapDifference.toFixed(2);
-  
-    // Add market cap information in a visually appealing way
-    message += ` *${formattedMarketCap}* MC | ATH: *${athMarketCap}* MC | *${percentageDifference}*%`;
-  } else {
-    // If ATH is 0 or not available, just show the current market cap
-    message += ` *${formattedMarketCap}* MC`;
-  }
+// Check if ATH is available and non-zero
+if (ath.allTimeHigh > 0) {
+  athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
+
+  // Calculate percentage difference
+  const athMarketCapValue = (ath.allTimeHigh * metadata.supply) / 1e6;
+  const marketCapDifference = ((currentMarketCap - athMarketCapValue) / athMarketCapValue) * 100;
+  const percentageDifference = marketCapDifference.toFixed(0); // Rounded percentage
+
+  // Format time ago
+  const timeSinceAth = timeAgo(ath.timestamp);
+
+  // Final formatted message
+  message += `💎 MC: *${formattedMarketCap}* ⇨ ATH: *${athMarketCap}* (${timeSinceAth}) *${percentageDifference}*% `;
+  twitterIntent += `MC: ${formattedMarketCap} ⇨ ATH: ${athMarketCap} ${timeSinceAth} ${percentageDifference}% \n`;
+} else {
+  // If ATH is 0 or not available, just show the current market cap
+  message += `💎 MC: ${formattedMarketCap}`;
+  twitterIntent += `MC: ${formattedMarketCap}\n`;
+}
 
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
-
+  twitterIntent += `${tokenAddress}\n\n`;
   let devHolds = "(0.00%)";
 
   if (metadata.supply) {
@@ -228,11 +254,20 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
   message += `📅 On ${formatTimestamp(metadata.created_time || metadata.first_mint_time)}\n`;
   message += formatSocials(metadata, dexSocials, tokenAddress);
 
+  const totalBundleHoldings = clusterPercentages.reduce(
+    (sum, cluster) => sum + parseFloat(cluster.totalHoldings || 0),
+    0
+  ).toFixed(2);
+
+  twitterIntent += `🧩 Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply\n`;
+
   // Guard against undefined tokenHistory
   message += `🏷️ *Previous Tokens Created: *`;
+  twitterIntent += `🏷️ Previous Tokens Created:`;
 
   if (tokenHistory && tokenHistory.length > 1) {
     message += `${tokenHistory.length - 1}\n`;
+    twitterIntent += `${tokenHistory.length - 1}\n`;
 
     const sortedTokens = [...tokenHistory].sort((a, b) => (b.metadata?.market_cap || 0) - (a.metadata?.market_cap || 0));
 
@@ -243,24 +278,34 @@ function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCou
         if (token.metadata?.address && token.metadata.address !== tokenAddress) {
             const flag = token.metadata?.market_cap ? `:${formatMarketCap(token.metadata.market_cap)}` : "";
             message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
+            twitterIntent+=`[$${token.metadata.symbol}${flag}] `;
         }
     });
 
     message += "\n";
+    twitterIntent += "\n";
   } else {
     message += "0\n";
+    twitterIntent += "0\n";
 
   }
   message += "\n";
+  twitterIntent += "\n";
   const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled, holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
-  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);
-  // Add the buy options links
+  
 
+
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);; 
+  twitterIntent += formatHolderSummaryIntent(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);; 
+  // Add the buy options links
+  twitterIntent+=`Visit https://mandog.fun/ for more scanning tools` 
 
 
   message += formatDexUpdates(dexPay);
   message += generateBuyOptions(dexSocials, tokenAddress);
 
+
+  message += `[💬 Share Summary on 𝕏 ](${generateTwitterIntent(twitterIntent)})\n\n`;
   return message;
 }
 
@@ -324,12 +369,14 @@ function generateTop20Holders(holdersData, clusterPercentages, metadata) {
 
     // Determine which emoji to use at the end (🟢 if bought more, 🔴 if sold more)
     const trendEmoji = parseFloat(holder["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
+    const lastSell = holder["Last Sell"] ? `(${timeAgo(new Date(holder["Last Sell"]).getTime() / 1000)})` : "";
+
     let isDev = ""
     if (metadata.creator) {
       if (holder.Address === metadata.creator) isDev = `*(dev)*`;
     }
     top20Mfers += `#${index + 1} *${holder["Current Holding (%)"]}%* [${holder.Address.slice(0, 4)}...${holder.Address.slice(-4)}](https://solscan.io/account/${holder.Address})${isDev}${alertEmoji}${freshEmoji}${clusterInfo}\n`;
-    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji}\n\n`;
+    top20Mfers += `\t\t\t\t⬆️ ${holder["Total Buys"]}/\u200B${holder["Total Sells"]} ⬇️ \t|\t ${holder["Total Bought (%)"]}%/\u200B${holder["Total Sold (%)"]}% ${trendEmoji} ${lastSell}\n\n`;
   });
 
   return top20Mfers + "\n";
@@ -370,7 +417,8 @@ function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
         const ranking = holdersData.findIndex(holder => holder.Address === recipient) + 1;
         const rankingText = ranking > 0 ? `#*${ranking}*` : "";
         const trendEmoji = parseFloat(recipientData["Total Sold (%)"]) > 0 ? "🔴" : "🟢";
-        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%* ${trendEmoji}\n`;
+        const lastSell = recipientData["Last Sell"] ? `(${timeAgo(new Date(recipientData["Last Sell"]).getTime() / 1000)})` : "";
+        message += `   - ${rankingText.padEnd(6)} [${recipient.slice(0, 6)}...](https://solscan.io/account/${recipient}): *${holding}%* ${trendEmoji} ${lastSell}\n`;
       });
     }
   });
@@ -423,7 +471,6 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
-  console.log(metadata)
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
