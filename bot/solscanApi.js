@@ -254,6 +254,7 @@ const excludedSenders = new Set([
   "RBHdGVfDfMjfU6iUfCb1LczMJcQLx7hGnxbzRsoDNvx",
   "AgsYPSd9jQZEpbTMsvBWKdiAux3eyghdSY355QVHH9Hs",
   "25mYnjJ2MXHZH6NvTTdA63JvjgRVcuiaj6MRiEQNs1Dq",
+  "2AQdpHJ2JpcEgPiATUXjQxA8QmafFegfQwSLWSprPicm",
   
   // ✅ Newly added addresses
   "D89hHJT5Aqyx1trP6EnGY9jJUB3whgnq3aUvvCqedvzf", // Coinbase Hot Wallet
