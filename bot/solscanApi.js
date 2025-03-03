@@ -215,51 +215,57 @@ async function getFundingMap(topHolders) {
   const batchSize = 10; // Adjust based on API limits and network conditions
   const batches = [];
 
-  // Addresses to exclude from the funding map
-  const excludedSenders = new Set([
-    "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
-    "H8sMJSCQxfKiFTCfDR3DUMLPwcRbM61LGFJ8N4dK3WjS",
-    "FpwQQhQQoEaVu3WU2qZMfF1hx48YyfwsLoRgXG83E99Q",
-    "GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE",
-    "8Czzjeh2igeE7gSsbuuXVZUmZZ42yZTCNUZoZcCGRKdr",
-    "9H7GmRENevv3ikBfMxnCRm8hc1Dyrh3jPP7pNfbugm2H",
-    "AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW2",
-    "ASTyfSima4LLAdDgoFGkgqoKowG1LZFDr9fAQrg7iaJZ",
-    "FWznbcNXWQuHTawe9RxvQ2LdCENssh12dsznf4RiouN5",
-    "G2YxRa6wt1qePMwfJzdXZG62ej4qaTC7YURzuh2Lwd3t",
-    "AxiomRYAid8ZDhS1bJUAzEaNSr69aTWB9ATfdDLfUbnc",
-    "C1wLJs3MfnaQTfZxz2YD6NtsWELc1MgR68H61wNmQ6xy",
-    "4tLakcSWmMa96znXz6MWsM4BRcXTYurPrjvLcKfbJuHZ",
-    "2AQdpHJ2JpcEgPiATUXjQxA8QmafFegfQwSLWSprPicm",
-    "Cc3bpPzUvgAzdW9Nv7dUQ8cpap8Xa7ujJgLdpqGrTCu6",
-    "AeBwztwXScyNNuQCEdhS54wttRQrw3Nj1UtqddzB4C7b",
-    "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
-    "5PAhQiYdLBd6SVdjzBQDxUAEFyDdF5ExNPQfcscnPRj5",
-    "8Mm46CsqxiyAputDUp2cXHg41HE3BfynTeMBDwzrMZQH",
-    "A77HErqtfN1hLLpvZ9pCtu66FEtM8BveoaKbbMoZ4RiR",
-    "5sTQ5ih7xtctBhMXHr3f1aWdaXazWrWfoehqWdqWnTFP",
-    "GCtXCKbCKWudrAsbrHtd2ngMgrSmGZGjoaYRtzPEF3Lv",
-    "DBmae92YTQKLsNzXcPscxiwPqMcz9stQr2prB5ZCAHPd",
-    "HVh6wHNBAsG3pq1Bj5oCzRjoWKVogEDHwUHkRz3ekFgt",
-    "DPqsobysNf5iA9w7zrQM8HLzCKZEDMkZsWbiidsAt1xo",
-    "6FEVkH17P9y8Q9aCkDdPcMDjvj7SVxrTETaYEm8f51Jy",
-    "22Wnk8PwyWZV7BfkZGJEKT9jGGdtvu7xY6EXeRh7zkBa",
-    "MfDuWeqSHEqTFVYZ7LoexgAK9dxk7cy4DFJWjWMGVWa",
-    "GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE",
-    "4GC3a1RkRXx5shwGP8pTY6cxXgSWkbfc66vM53a6qSKj",
-    "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
-    "9cNE6KBg2Xmf34FPMMvzDF8yUHMrgLRzBV3vD7b1JnUS",
-    "BbHG9GvPActFGogv3iNrpDAj4qpXr8t3jF16uGxXcKci",
-    "HC8dSfJNBESPmG6fp3UvUSm5yb79Fyv2LipPvRfRLhZo",
-    "3Q3pE1izgCeAtTR23eufZy5vCEGtpWLBQcGD2HGd1cbU",
-    "F7RkX6Y1qTfBqoX5oHoZEgrG1Dpy55UZ3GfWwPbM58nQ",
-    "8s9j5qUtuE9PGA5s7QeAXEh5oc2UGr71pmJXgyiZMHkt",
-    "HBxZShcE86UMmF93KUM8eWJKqeEXi5cqWCLYLMMhqMYm",
-    "2E1UKoiiZPwsp4vn6tUh5k61kG2UqYpT7oBrFaJUJXXd",
-    "RBHdGVfDfMjfU6iUfCb1LczMJcQLx7hGnxbzRsoDNvx",
-    "AgsYPSd9jQZEpbTMsvBWKdiAux3eyghdSY355QVHH9Hs",
-    "25mYnjJ2MXHZH6NvTTdA63JvjgRVcuiaj6MRiEQNs1Dq"
-  ]);
+// Addresses to exclude from the funding map
+const excludedSenders = new Set([
+  "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
+  "H8sMJSCQxfKiFTCfDR3DUMLPwcRbM61LGFJ8N4dK3WjS",
+  "FpwQQhQQoEaVu3WU2qZMfF1hx48YyfwsLoRgXG83E99Q",
+  "GJRs4FwHtemZ5ZE9x3FNvJ8TMwitKTh21yxdRPqn7npE",
+  "8Czzjeh2igeE7gSsbuuXVZUmZZ42yZTCNUZoZcCGRKdr",
+  "AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW2",
+  "ASTyfSima4LLAdDgoFGkgqoKowG1LZFDr9fAQrg7iaJZ",
+  "FWznbcNXWQuHTawe9RxvQ2LdCENssh12dsznf4RiouN5",
+  "G2YxRa6wt1qePMwfJzdXZG62ej4qaTC7YURzuh2Lwd3t",
+  "AxiomRYAid8ZDhS1bJUAzEaNSr69aTWB9ATfdDLfUbnc",
+  "Cc3bpPzUvgAzdW9Nv7dUQ8cpap8Xa7ujJgLdpqGrTCu6",
+  "AeBwztwXScyNNuQCEdhS54wttRQrw3Nj1UtqddzB4C7b",
+  "u6PJ8DtQuPFnfmwHbGFULQ4u4EgjDiyYKjVEsynXq2w",
+  "5PAhQiYdLBd6SVdjzBQDxUAEFyDdF5ExNPQfcscnPRj5",
+  "8Mm46CsqxiyAputDUp2cXHg41HE3BfynTeMBDwzrMZQH",
+  "A77HErqtfN1hLLpvZ9pCtu66FEtM8BveoaKbbMoZ4RiR",
+  "5sTQ5ih7xtctBhMXHr3f1aWdaXazWrWfoehqWdqWnTFP",
+  "GCtXCKbCKWudrAsbrHtd2ngMgrSmGZGjoaYRtzPEF3Lv",
+  "DBmae92YTQKLsNzXcPscxiwPqMcz9stQr2prB5ZCAHPd",
+  "HVh6wHNBAsG3pq1Bj5oCzRjoWKVogEDHwUHkRz3ekFgt",
+  "DPqsobysNf5iA9w7zrQM8HLzCKZEDMkZsWbiidsAt1xo",
+  "6FEVkH17P9y8Q9aCkDdPcMDjvj7SVxrTETaYEm8f51Jy",
+  "22Wnk8PwyWZV7BfkZGJEKT9jGGdtvu7xY6EXeRh7zkBa",
+  "MfDuWeqSHEqTFVYZ7LoexgAK9dxk7cy4DFJWjWMGVWa",
+  "4GC3a1RkRXx5shwGP8pTY6cxXgSWkbfc66vM53a6qSKj",
+  "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6",
+  "9cNE6KBg2Xmf34FPMMvzDF8yUHMrgLRzBV3vD7b1JnUS",
+  "BbHG9GvPActFGogv3iNrpDAj4qpXr8t3jF16uGxXcKci",
+  "HC8dSfJNBESPmG6fp3UvUSm5yb79Fyv2LipPvRfRLhZo",
+  "3Q3pE1izgCeAtTR23eufZy5vCEGtpWLBQcGD2HGd1cbU",
+  "F7RkX6Y1qTfBqoX5oHoZEgrG1Dpy55UZ3GfWwPbM58nQ",
+  "8s9j5qUtuE9PGA5s7QeAXEh5oc2UGr71pmJXgyiZMHkt",
+  "HBxZShcE86UMmF93KUM8eWJKqeEXi5cqWCLYLMMhqMYm",
+  "2E1UKoiiZPwsp4vn6tUh5k61kG2UqYpT7oBrFaJUJXXd",
+  "RBHdGVfDfMjfU6iUfCb1LczMJcQLx7hGnxbzRsoDNvx",
+  "AgsYPSd9jQZEpbTMsvBWKdiAux3eyghdSY355QVHH9Hs",
+  "25mYnjJ2MXHZH6NvTTdA63JvjgRVcuiaj6MRiEQNs1Dq",
+  
+  // ✅ Newly added addresses
+  "D89hHJT5Aqyx1trP6EnGY9jJUB3whgnq3aUvvCqedvzf", // Coinbase Hot Wallet
+  "Biw4eeaiYYYq6xSqEd7GzdwsrrndxA8mqdxfAtG3PTUU", // Unknown Exchange
+  "5F1seMKUqSNhv45f6FhB2cFmgJbk8U1avJw7M6TexUq1", // Unknown Exchange
+  "H2PVM96jQomH864kZAAxRMFBZaHbdKQG2iG21v52jRxF", // Unknown Exchange
+  "DhEsUaJkT1DzkFUWLCkU21VruJQZk1es4zBRhU9QjK9R", // Unknown Exchange
+  "5VCwKtCXgCJ6kit5FybXjvriW3xELsFDhYrPSqtJNmcD", // OKX
+  "9bc61xemFMSZBsQZp59zQppw3sGXrPhRkxrdVBtip6om", // Unknown Exchange
+  "DDh3B9CoPcbZu4hdBDG4FSTUTb9VYG1CobnUinyWyerB"  // Unknown Exchange
+]);
+
 
   // Split topHolders into batches for better concurrency
   for (let i = 0; i < topHolders.length; i += batchSize) {
