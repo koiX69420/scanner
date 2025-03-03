@@ -255,16 +255,14 @@ const excludedSenders = new Set([
   "AgsYPSd9jQZEpbTMsvBWKdiAux3eyghdSY355QVHH9Hs",
   "25mYnjJ2MXHZH6NvTTdA63JvjgRVcuiaj6MRiEQNs1Dq",
   "2AQdpHJ2JpcEgPiATUXjQxA8QmafFegfQwSLWSprPicm",
-  
-  // ✅ Newly added addresses
-  "D89hHJT5Aqyx1trP6EnGY9jJUB3whgnq3aUvvCqedvzf", // Coinbase Hot Wallet
-  "Biw4eeaiYYYq6xSqEd7GzdwsrrndxA8mqdxfAtG3PTUU", // Unknown Exchange
-  "5F1seMKUqSNhv45f6FhB2cFmgJbk8U1avJw7M6TexUq1", // Unknown Exchange
-  "H2PVM96jQomH864kZAAxRMFBZaHbdKQG2iG21v52jRxF", // Unknown Exchange
-  "DhEsUaJkT1DzkFUWLCkU21VruJQZk1es4zBRhU9QjK9R", // Unknown Exchange
-  "5VCwKtCXgCJ6kit5FybXjvriW3xELsFDhYrPSqtJNmcD", // OKX
-  "9bc61xemFMSZBsQZp59zQppw3sGXrPhRkxrdVBtip6om", // Unknown Exchange
-  "DDh3B9CoPcbZu4hdBDG4FSTUTb9VYG1CobnUinyWyerB"  // Unknown Exchange
+  "D89hHJT5Aqyx1trP6EnGY9jJUB3whgnq3aUvvCqedvzf", 
+  "Biw4eeaiYYYq6xSqEd7GzdwsrrndxA8mqdxfAtG3PTUU", 
+  "5F1seMKUqSNhv45f6FhB2cFmgJbk8U1avJw7M6TexUq1", 
+  "H2PVM96jQomH864kZAAxRMFBZaHbdKQG2iG21v52jRxF", 
+  "DhEsUaJkT1DzkFUWLCkU21VruJQZk1es4zBRhU9QjK9R", 
+  "5VCwKtCXgCJ6kit5FybXjvriW3xELsFDhYrPSqtJNmcD", 
+  "9bc61xemFMSZBsQZp59zQppw3sGXrPhRkxrdVBtip6om", 
+  "DDh3B9CoPcbZu4hdBDG4FSTUTb9VYG1CobnUinyWyerB"  
 ]);
 
 
