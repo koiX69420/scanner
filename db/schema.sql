@@ -37,12 +37,4 @@ CREATE TABLE  IF NOT EXISTS chats (
   UNIQUE(chat_id, token_address)
 );
 
-CREATE TABLE IF NOT EXISTS dexscreener_updates (
-    id SERIAL PRIMARY KEY,
-    token_address TEXT NOT NULL UNIQUE,
-    url TEXT NOT NULL,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE INDEX IF NOT EXISTS idx_chats_token_chat ON chats(token_address, chat_id);
