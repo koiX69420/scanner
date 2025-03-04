@@ -22,30 +22,27 @@ CREATE TABLE IF NOT EXISTS token_scan_history (
   UNIQUE(token_address, scan_timestamp)
 );
 
--- Index on token_address for quicker lookups
--- Composite index on (scan_timestamp, token_address, symbol) for efficient filtering and grouping
+
 CREATE INDEX IF NOT EXISTS idx_scan_timestamp_token_symbol 
 ON token_scan_history (scan_timestamp DESC, token_address, symbol);
 
--- Optionally, index on scan_timestamp for better filtering
 CREATE INDEX IF NOT EXISTS idx_scan_timestamp ON token_scan_history (scan_timestamp DESC);
--- -- Insert 10,000 random records into token_scan_history
--- DO $$ 
--- BEGIN
---     FOR i IN 1..10000 LOOP
---         INSERT INTO token_scan_history (token_address, symbol, scan_timestamp)
---         VALUES 
---         (
---             -- Random token address (this will be a random Bitcoin-like address)
---             '1' || substring(md5(random()::text), 1, 33), 
-            
---             -- Random symbol (for simplicity, we use currency codes, such as $USD, $BTC, $ETH)
---             '$' || (array['USD', 'BTC', 'ETH', 'SOL', 'ADA', 'XRP', 'LTC', 'DOGE', 'DOT', 'MATIC'])[floor(random() * 10) + 1], 
 
---             -- Random timestamp within the past month
---             NOW() - INTERVAL '1 day' * floor(random() * 7)  -- Random day within past week
---                  - INTERVAL '1 hour' * floor(random() * 24) -- Random hour
---                  - INTERVAL '1 minute' * floor(random() * 60) -- Random minute
---         );
---     END LOOP;
--- END $$;
+
+CREATE TABLE  IF NOT EXISTS chats (
+  id SERIAL PRIMARY KEY,
+  chat_id BIGINT NOT NULL,
+  token_address TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(chat_id, token_address)
+);
+
+CREATE TABLE IF NOT EXISTS dexscreener_updates (
+    id SERIAL PRIMARY KEY,
+    token_address TEXT NOT NULL UNIQUE,
+    url TEXT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chats_token_chat ON chats(token_address, chat_id);

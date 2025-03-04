@@ -594,15 +594,23 @@ async function processGlobalQueue() {
 const userCooldowns = new Map(); // Store last request timestamp per user
 const COOLDOWN_TIME = 5000; // 5 seconds in milliseconds
 
+async function saveChatRequest(chatId, tokenAddress) {
+  await pool.query(`
+      INSERT INTO chats (chat_id, token_address)
+      VALUES ($1, $2)
+      ON CONFLICT (chat_id, token_address) DO NOTHING;
+  `, [chatId, tokenAddress]);
+}
+
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text?.trim();
   const now = Date.now();
-
   // Validate if the message contains a Solana address
   if (!text || !SOLANA_ADDRESS_REGEX.test(text)) {
     return; // Ignore messages that are not valid Solana addresses
   }
+  await saveChatRequest(chatId,text);
 
   // Check if user is on cooldown
   if (userCooldowns.has(chatId)) {

@@ -5,6 +5,7 @@ const nacl = require("tweetnacl")
 const { PublicKey } = require('@solana/web3.js'); // Import the PublicKey class from Solana Web3.js
 const pool = require("./db/db"); // PostgreSQL connection
 const cors = require("cors");
+require("./crons/notify");
 
 require('dotenv').config();
 
