@@ -55,3 +55,28 @@ async function sendTelegramMessage(chatId, message) {
 
 // Run every 30 seconds
 cron.schedule('*/30 * * * * *', fetchAndNotifyDexscreenerUpdates);
+
+async function cleanupChatsTable() {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+        // SQL to delete chats older than 1 month
+        const deleteQuery = `
+            DELETE FROM chats
+            WHERE created_at < NOW() - INTERVAL '1 month';
+        `;
+        await client.query(deleteQuery);
+
+        await client.query("COMMIT");
+        console.log('✅ Chats table cleaned up successfully.');
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("❌ Error cleaning up chats table:", error);
+    } finally {
+        client.release();
+    }
+}
+
+// Schedule cleanup job to run every day at midnight
+cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
