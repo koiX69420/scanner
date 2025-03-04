@@ -53,8 +53,7 @@ async function sendTelegramMessage(chatId, message) {
     }
 }
 
-// Run every 30 seconds
-cron.schedule('*/30 * * * * *', fetchAndNotifyDexscreenerUpdates);
+
 
 async function cleanupChatsTable() {
     const client = await pool.connect();
@@ -78,5 +77,7 @@ async function cleanupChatsTable() {
     }
 }
 
-// Schedule cleanup job to run every day at midnight
-cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
+// // Run every 30 seconds
+// cron.schedule('*/30 * * * * *', fetchAndNotifyDexscreenerUpdates);
+// // Schedule cleanup job to run every day at midnight
+// cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
