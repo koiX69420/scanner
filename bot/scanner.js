@@ -267,7 +267,7 @@ if (ath.allTimeHigh > 0) {
 
   // Guard against undefined tokenHistory
   message += `🏷️ *Previous Tokens Created: *`;
-  twitterIntent += `🏷️ Previous Launches: `;
+  twitterIntent += `🏷️ Prev. Launches: `;
 
   if (tokenHistory && tokenHistory.length > 1) {
     message += `${tokenHistory.length - 1}\n`;
