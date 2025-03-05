@@ -41,11 +41,11 @@ const {
 
 
 
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath, isSummary = false) {
   // if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
 
   if (!isSummary) {
@@ -100,8 +100,8 @@ function formatDexUpdates(dexPay) {
   let dp = false
   let ret = `🦅 *Dexscreener Updates*\n` +
     dexPay.map(order => {
-      if(order.status === "approved"){
-        dp=true;
+      if (order.status === "approved") {
+        dp = true;
       }
       let statusEmoji = order.status === "approved" ? "✅" :
         order.status === "processing" ? "⏳" :
@@ -110,7 +110,7 @@ function formatDexUpdates(dexPay) {
       return `  ${statusEmoji} ${order.type}: ${order.status} on ${formatTimestamp(order.paymentTimestamp)}`;
     }).join("\n") + "\n\n";
 
-  return {dp:dp,msg:ret}
+  return { dp: dp, msg: ret }
 }
 
 function formatSocials(metadata, dexSocials, tokenAddress) {
@@ -199,53 +199,53 @@ function formatHolderSummaryIntent(alertCount, bundled, freshBundled, freshNotBu
 }
 
 
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts,ath) {
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath) {
   let message = `🔹 *MDTT Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
-  
-  let twitterIntent =`@MandogMF Analysis: $${metadata.symbol}\n`
-  twitterIntent+=`${tokenAddress}\n`
+
+  let twitterIntent = `@MandogMF Analysis: $${metadata.symbol}\n`
+  twitterIntent += `${tokenAddress}\n`
   const totalBundleHoldings = clusterPercentages.reduce(
     (sum, cluster) => sum + parseFloat(cluster.totalHoldings || 0),
     0
   ).toFixed(2);
 
-  twitterIntent+= `🧩 Bundles: ${clusterPercentages.length} \[${totalBundleHoldings}%\]\n`;
+  twitterIntent += `🧩 Bundles: ${clusterPercentages.length} \[${totalBundleHoldings}%\]\n`;
 
   let currentMarketCap = metadata.market_cap; // Default to metadata value
   const raydiumPool = dexSocials.find(pool => pool.dexId === 'raydium');
   const pumpfunPool = dexSocials.find(pool => pool.dexId === 'pumpfun');
-  
+
   if (raydiumPool?.marketCap) {
     currentMarketCap = raydiumPool.marketCap;
   } else if (pumpfunPool?.marketCap) {
     currentMarketCap = pumpfunPool.marketCap;
-  }else{
-    currentMarketCap=0
+  } else {
+    currentMarketCap = 0
   }
 
   // Format the selected market cap
   const formattedMarketCap = formatMarketCap(currentMarketCap);
 
   let athMarketCap = "N/A"; // Default to "N/A" if ATH is 0 or not available
-  
-// Check if ATH is available and non-zero
-if (ath.allTimeHigh > 0) {
-  athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
 
-  // Calculate percentage difference
-  const athMarketCapValue = (ath.allTimeHigh * metadata.supply) / 1e6;
-  const marketCapDifference = ((currentMarketCap - athMarketCapValue) / athMarketCapValue) * 100;
-  const percentageDifference = marketCapDifference.toFixed(0); // Rounded percentage
+  // Check if ATH is available and non-zero
+  if (ath.allTimeHigh > 0) {
+    athMarketCap = formatMarketCap((ath.allTimeHigh * metadata.supply) / 1e6);
 
-  // Format time ago
-  const timeSinceAth = timeAgo(ath.timestamp);
+    // Calculate percentage difference
+    const athMarketCapValue = (ath.allTimeHigh * metadata.supply) / 1e6;
+    const marketCapDifference = ((currentMarketCap - athMarketCapValue) / athMarketCapValue) * 100;
+    const percentageDifference = marketCapDifference.toFixed(0); // Rounded percentage
 
-  // Final formatted message
-  message += `💎 MC: *${formattedMarketCap}* ⇨ ATH: *${athMarketCap}* (${timeSinceAth}) *${percentageDifference}*% `;
-} else {
-  // If ATH is 0 or not available, just show the current market cap
-  message += `💎 MC: ${formattedMarketCap}`;
-}
+    // Format time ago
+    const timeSinceAth = timeAgo(ath.timestamp);
+
+    // Final formatted message
+    message += `💎 MC: *${formattedMarketCap}* ⇨ ATH: *${athMarketCap}* (${timeSinceAth}) *${percentageDifference}*% `;
+  } else {
+    // If ATH is 0 or not available, just show the current market cap
+    message += `💎 MC: ${formattedMarketCap}`;
+  }
 
   message += `\n\`${tokenAddress}\`[🔎](https://x.com/search?q=${tokenAddress})\n\n`;
   let devHolds = "(0.00%)";
@@ -279,10 +279,10 @@ if (ath.allTimeHigh > 0) {
     const topTokens = sortedTokens.slice(0, 10);
 
     topTokens.forEach(token => {
-        if (token.metadata?.address && token.metadata.address !== tokenAddress) {
-            const flag = token.metadata?.market_cap ? `:${formatMarketCap(token.metadata.market_cap)}` : "";
-            message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
-        }
+      if (token.metadata?.address && token.metadata.address !== tokenAddress) {
+        const flag = token.metadata?.market_cap ? `:${formatMarketCap(token.metadata.market_cap)}` : "";
+        message += `[$${token.metadata.symbol}](https://solscan.io/token/${token.metadata.address})${flag}\t`;
+      }
     });
 
     message += "\n";
@@ -292,23 +292,23 @@ if (ath.allTimeHigh > 0) {
   }
   message += "\n";
   const { sellingWallets, zeroBuyWallets, bundledWallets, bundledFreshWallets, freshNotBundled, holdingAmount } = analyzeWallets(top20Data, clusterPercentages);
-  
 
 
-  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);; 
-  twitterIntent += formatHolderSummaryIntent(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);; 
+
+  message += formatHolderSummary(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);;
+  twitterIntent += formatHolderSummaryIntent(alertEmojiCount, bundledWallets, bundledFreshWallets, freshNotBundled, zeroBuyWallets, sellingWallets, holdingAmount);;
   // Add the buy options links
-  
-  const {dp,msg} = formatDexUpdates(dexPay);
+
+  const { dp, msg } = formatDexUpdates(dexPay);
   message += msg;
   message += generateBuyOptions(dexSocials, tokenAddress);
   console.log(dp)
-  if(dp){
-    twitterIntent+=`✅ dp`
-  }else{
-    twitterIntent+=`⛔ dp`
+  if (dp) {
+    twitterIntent += `✅ dp`
+  } else {
+    twitterIntent += `⛔ dp`
   }
-  twitterIntent+=`\nmandog.fun/` 
+  twitterIntent += `\nmandog.fun/`
   message += `[💬 Share Summary on 𝕏 ](${generateTwitterIntent(twitterIntent)})\n\n`;
   return message;
 }
@@ -388,13 +388,18 @@ function generateTop20Holders(holdersData, clusterPercentages, metadata) {
 
 // Generates the Cluster Analysis section
 function generateClusterAnalysis(holdersData, clusterPercentages, isSummary) {
-
+  // Step 1: Calculate total holdings of addresses with Total Buys = 0
+  const totalNoBuyHoldings = holdersData
+    .filter(holder => holder['Total Buys'] === 0 && holder['Current Holding (%)']) // Filter & ensure it has a Current Holding value
+    .reduce((sum, holder) => sum + parseFloat(holder['Current Holding (%)'] || 0), 0)
+    .toFixed(2);
   const totalBundleHoldings = clusterPercentages.reduce(
     (sum, cluster) => sum + parseFloat(cluster.totalHoldings || 0),
     0
   ).toFixed(2);
 
-  let message = `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply*\n`;
+  let message = `🚨 *Total Holdings of Addresses with 0 Buys: ${totalNoBuyHoldings}%*\n\n`;
+  message += `🧩 *Bundle Analysis - ${clusterPercentages.length} bundles with ${totalBundleHoldings}% supply*\n`;
   message += `_Showing only top 4 recipients per bundle_\n`
   const top5Clusters = clusterPercentages.slice(0, 3);
 
@@ -465,7 +470,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
       console.log("Returning cached data");
       availableApiCalls += API_CALLS_PER_REQUEST;
       const metadata = await fetchTokenMetadata(tokenAddress);
-      recordTokenScanHistory(tokenAddress,metadata.symbol)
+      recordTokenScanHistory(tokenAddress, metadata.symbol)
       return data; // Return cached response
     }
   }
@@ -482,10 +487,10 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const poolsPromise = fetchTokenMarkets(tokenAddress);
   const tokenHistoryPromise = fetchTokenCreationHistory(metadata.creator);
   const devTokenAccountsPromise = fetchTokenAccounts(metadata.creator)
-  const athPromise = fetchAth(tokenAddress,metadata.created_time || metadata.first_mint_time)
+  const athPromise = fetchAth(tokenAddress, metadata.created_time || metadata.first_mint_time)
 
   // Wait for all the independent data to finish fetching
-  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory, devTokenAccounts,ath] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise, devTokenAccountsPromise,athPromise]);
+  const [rawMoreHolderData, fundingMap, dexPay, pools, tokenHistory, devTokenAccounts, ath] = await Promise.all([moreHolderDataPromise, fundingMapPromise, dexPayPromise, poolsPromise, tokenHistoryPromise, devTokenAccountsPromise, athPromise]);
   const pumpfun = await getPumpFunWallet(pools)
 
   const moreHolderData = pumpfun.pool_id
@@ -498,7 +503,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
   const dexSocials = await fetchDexSocials(pools);
   // Format the message based on all the fetched data
 
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts,ath, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath, isSummary);
 
   console.log("Sent message");
 
@@ -519,7 +524,7 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
 
   // Store the result in the cache with a timestamp
   cache.set(cacheKey, { timestamp: now, data: responseData });
-  recordTokenScanHistory(tokenAddress,metadata.symbol)
+  recordTokenScanHistory(tokenAddress, metadata.symbol)
   return responseData;
 }
 
@@ -529,7 +534,7 @@ async function recordTokenScanHistory(tokenAddress, symbol) {
     INSERT INTO token_scan_history (token_address, symbol, scan_timestamp)
     VALUES ($1, $2, CURRENT_TIMESTAMP)
   `;
-  
+
   try {
     await pool.query(query, [tokenAddress, symbol]);
   } catch (error) {
@@ -614,7 +619,7 @@ bot.on("message", async (msg) => {
   if (!text || !SOLANA_ADDRESS_REGEX.test(text)) {
     return; // Ignore messages that are not valid Solana addresses
   }
-  await saveChatRequest(chatId,text);
+  await saveChatRequest(chatId, text);
 
   // Check if user is on cooldown
   if (userCooldowns.has(chatId)) {
