@@ -96,8 +96,9 @@ function analyzeWallets(top20Data, clusterPercentages) {
   return { sellingWallets, zeroBuyWallets, bundledWallets: bundledWallets.size, bundledFreshWallets, freshNotBundled, holdingAmount };
 }
 function formatDexUpdates(dexPay) {
-  if (!dexPay.length) return `🦅 Dexscreener Updates: ❌ No orders found\n\n`;
   let dp = false
+  if (!dexPay.length) return { dp: dp, msg: `🦅 Dexscreener Updates: ❌ No orders found\n\n` };
+  
   let ret = `🦅 *Dexscreener Updates*\n` +
     dexPay.map(order => {
       if (order.status === "approved") {
