@@ -18,7 +18,7 @@ router.post("/token-message", async (req, res) => {
     if (hasMoreTokensThanNeeded) {
         try {
             // If all checks pass, generate the token message
-            const response = await generateTokenMessage(tokenAddress, isSummary);
+            const response = await generateTokenMessage(tokenAddress, 20,isSummary);
 
             return res.status(200).json({
                 success: true,
@@ -71,7 +71,7 @@ router.post("/token-message", async (req, res) => {
             }
 
             // If all checks pass, generate the token message
-            const response = await generateTokenMessage(tokenAddress, isSummary);
+            const response = await generateTokenMessage(tokenAddress,200, isSummary);
             return res.status(200).json({
                 success: true,
                 response
