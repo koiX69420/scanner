@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,34 +9,48 @@
     <link rel="icon" type="image/x-icon" href="/128.png">
 
 </head>
+
 <body>
 
-    <div class = "main-container">
+    <div class="main-container">
         <h2>Mandog Trench Tools</h2>
-        <!-- Tutorial Section -->
-        <div class="tutorial-section">
-            <p>Getting Started with Mandog Trench Tools Chrome Browser Extention</p>
-            <ol>
-                <li>Install the browser extension - <a href="https://mandog.fun" target="_blank" rel="noopener noreferrer">TBA</a></li>
-                <li>Navigate to <a href="https://mandog.fun" target="_blank" rel="noopener noreferrer">mandog.fun</a> using your browser or click the link within the extension.</li>
-                <li>If you are not already <b>verified</b>, you will <b>need to do so before the tool will work.</b> This can be done via the official telegram <a href="https://t.me/ManDogMFbot?start=verify" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> with the <code>/veriy</code> command.</li>
-                <li>Navigate to the link provided by the Mandog Telegram bot. This will automatically initiate a transaction to pay for 30 days of access.</li>
-                <li>You can only verify one browser at a time, you can change your device via the official telegram <a href="https://t.me/ManDogMFbot?start=deviceupdate" target="_blank" rel="noopener noreferrer">@ManDogMFbot</a> with the <code>/deviceupdate</code> command.</li></li>
-                <li>Clicking on the Mandog extension will now show a field to enter a Solana CA (Contract Address). It will also be integrated as a clickable icon on <a href="https://photon-sol.tinyastro.io/en/memescope" target="_blank" rel="noopener noreferrer">Photon</a>, <a href="https://bullx.io/pump-vision" target="_blank" rel="noopener noreferrer">Bullx</a> and <a href="https://axiom.trade/pulse" target="_blank" rel="noopener noreferrer">Axiom (Token Page)</a>.</li>
-                <li>You are now ready to begin scanning. Good luck and happy trenching!</li>
-            </ol>
+        <div class="services">
+            <div class="service-box">
+                <h2>🔹 Basic Service (Tokengated)</h2>
+                <ol>
+                    <li>Link your wallet via <a href="https://t.me/ManDogMFbot?start=link"
+                        target="_blank">@ManDogMFbot</a> utilizing the <code>/link</code> command</li>
+                    <li>Hold more than X of the $X token in your wallet.</li>
+                    <li>Happy trenching with the basic package of <b>Mandog Trench Tools</b> telegram bot.</li>
+                </ol>
+                <button id="linkWallet" onclick="window.open('https://t.me/scannerdevtemp_bot?start=link', '_blank')">
+                    Start the linking process
+                </button>
+            </div>
+            <!-- Subscription Service (Paid) -->
+            <div class="service-box">
+                <h2>🔥 Subscription Service (Premium)</h2>
+                <ol>
+                    <li>Install the browser extension - <a href="https://mandog.fun" target="_blank">TBA</a></li>
+                    <li>Subscribe via <a href="https://t.me/@scannerdevtemp_bot?start=subscribe"
+                            target="_blank">@ManDogMFbot</a> using <code>/subscribe</code>.</li>
+                    <li>Confirm the 30-day payment transaction.</li>
+                    <li>(Optional) Update your device in case of device change via <a href="https://t.me/ManDogMFbot?start=deviceupdate"
+                            target="_blank">@ManDogMFbot</a> if needed.</li>
+                </ol>
+                <button id="linkWallet" onclick="window.open('https://t.me/scannerdevtemp_bot?start=subscribe', '_blank')">
+                    Start subscription process
+                </button>
+            </div>
         </div>
-        <!-- Phantom Wallet Login Button -->
         <button id="connectWallet">Inject your wallet into the MDTT Browser Extention</button>
-        
-        <!-- Display Wallet Address -->
         <p id="status"></p>
     </div>
     <footer>
-        <p>&copy; Mandog Trench Tools | <a href="https://mandog.fun/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></p>
+        <p>&copy; Mandog Trench Tools | <a href="https://mandog.fun/privacy" target="_blank"
+                rel="noopener noreferrer">Privacy Policy</a></p>
     </footer>
     <script src="scripts/connect.js"></script> <!-- Move JS logic to an external file -->
 </body>
+
 </html>
-
-

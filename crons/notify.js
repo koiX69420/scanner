@@ -14,7 +14,6 @@ async function fetchAndNotifyDexscreenerUpdates() {
         const url = `https://api.dexscreener.com/token-profiles/latest/v1`;
         const response = await fetch(url);
         const data = await response.json();
-        console.log(data)
         if (Array.isArray(data) && data.length > 0) {
             const solanaTokens = data.filter(token => token.chainId === "solana");
 

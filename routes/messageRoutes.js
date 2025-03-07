@@ -3,27 +3,10 @@ const { generateTokenMessage } = require('../bot/scanner');
 const pool = require('../db/db');
 const { fetchTokenAccounts } = require("../bot/solscanApi")
 const router = express.Router();
-
+const {tokenGate}=require("../bot/util")
 TOKEN_ADDRESS = process.env.TOKEN_ADDRESS
 TOKENGATE_AMOUNT = process.env.TOKENGATE_AMOUNT
-async function tokenGate(walletAddress) {
-    // Fetch token accounts for the wallet
-    const tokenAccounts = await fetchTokenAccounts(walletAddress);
-    
-    // Find the specific token account using the token address
-    const tokenAccount = tokenAccounts.find(({ token_address }) => token_address === TOKEN_ADDRESS);
-    
-    // If no token account found, return false early
-    if (!tokenAccount) return false;
-    
-    // Destructure the necessary fields from the token account
-    const { amount, token_decimals } = tokenAccount;
-    
-    // Convert the raw amount to human-readable amount
-    const fetchedAmount = amount / (10 ** token_decimals);
-    // Return whether the fetched amount is greater than or equal to the required amount
-    return fetchedAmount >= parseInt(TOKENGATE_AMOUNT);
-  }
+
 
 router.post("/token-message", async (req, res) => {
     const { tokenAddress, walletAddress, isSummary = false, hardwareConcurrency, deviceMemory, language, userAgent } = req.body;
@@ -50,7 +33,7 @@ router.post("/token-message", async (req, res) => {
         try {
             // Query to check if wallet is validated and device data matches
             const validationQuery = `
-              SELECT * FROM validated_users
+              SELECT * FROM subscribed_users
               WHERE wallet_address = $1
           `;
 

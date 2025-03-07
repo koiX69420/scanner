@@ -1,3 +1,8 @@
+
+const {
+  fetchTokenAccounts
+} = require('./solscanApi');
+
 async function calculateClusterPercentages(holderData, fundingMap) {
   try {
     console.log(`Calculating cluster percentages...`);
@@ -94,6 +99,25 @@ function generateTooltip() {
   return tooltip;
 }
 
+async function tokenGate(walletAddress) {
+  // Fetch token accounts for the wallet
+  const tokenAccounts = await fetchTokenAccounts(walletAddress);
+  
+  // Find the specific token account using the token address
+  const tokenAccount = tokenAccounts.find(({ token_address }) => token_address === TOKEN_ADDRESS);
+  
+  // If no token account found, return false early
+  if (!tokenAccount) return false;
+  
+  // Destructure the necessary fields from the token account
+  const { amount, token_decimals } = tokenAccount;
+  
+  // Convert the raw amount to human-readable amount
+  const fetchedAmount = amount / (10 ** token_decimals);
+  // Return whether the fetched amount is greater than or equal to the required amount
+  return fetchedAmount >= parseInt(TOKENGATE_AMOUNT);
+}
+
 // Function to calculate time difference from Unix timestamp
 function timeAgo(unixTime) {
   const now = Math.floor(Date.now() / 1000); // Get current Unix timestamp
@@ -110,5 +134,6 @@ module.exports = {
     formatMarketCap,
     formatTimestamp,
     generateTooltip,
-    timeAgo
+    timeAgo,
+    tokenGate
   };

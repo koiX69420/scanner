@@ -7,8 +7,12 @@ router.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/privacy.html'));
 });
 
-router.get("/verify", (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/verify.html'));
+router.get("/subscribe", (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/subscribe.html'));
+});
+
+router.get("/link", (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/link.html'));
 });
 
 router.get("/deviceupdate", (req, res) => {

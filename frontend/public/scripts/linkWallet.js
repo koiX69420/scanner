@@ -1,6 +1,6 @@
 // Check if the current page is the verify page with tgId in the URL
-if (window.location.pathname === "/verify" && new URLSearchParams(window.location.search).has("tgId")) {
-updateStatus("🔹 Starting wallet verification...")
+if (window.location.pathname === "/link" && new URLSearchParams(window.location.search).has("tgId")) {
+updateStatus("🔹 Starting wallet linking...")
 
     async function verifyWallet() {
         const params = new URLSearchParams(window.location.search);
@@ -9,10 +9,10 @@ updateStatus("🔹 Starting wallet verification...")
         if (!tgId) return showError("Missing Telegram ID!");
 
         // Check if wallet is already verified
-        const validationData = await checkTgValidation(tgId);
+        const validationData = await checkLinkedWallet(tgId);
         if (validationData.success) {
 
-            return showSuccess(`✅ TG User <b>${tgId}</b> is already validated with the wallet: <b>${validationData.publicKey}</b> (<b>${validationData.daysLeft}</b> days remaining)`);
+            return showSuccess(`✅ TG User <b>${tgId}</b> has already linked with the wallet: <b>${validationData.publicKey}</b>`);
             
         }
 
@@ -20,20 +20,9 @@ updateStatus("🔹 Starting wallet verification...")
             const provider = getSolanaProvider();
             const walletAddress = await connectWallet(provider);
             const signedMessage = await signVerificationMessage(provider, tgId);
-            updateStatus(`Owner of <b>${walletAddress}</b> confirmed.\n Proceed with payment to verify Telegram User with ID:<b>${tgId}</b>.`)
-            const rpcUrl = await getRPCUrl();
 
-            const connection = new window.solanaWeb3.Connection(rpcUrl);
-            const signature = await processPayment(provider,connection);
+            await sendLinkedWalletToBackend(tgId, walletAddress, signedMessage);
 
-            updateStatus(" Please wait, confirming payment...",true);
-            const isConfirmed = await confirmTransaction(signature.signature,connection);
-            
-            if (isConfirmed) {
-                await sendVerificationToBackend(tgId, walletAddress, signedMessage);
-            } else {
-                showError("❌ Transaction failed. Please try again.");
-            }
         } catch (error) {
             showError(`❌ Error: ${error.message}`);
         }
@@ -54,7 +43,7 @@ if (window.location.pathname === "/deviceupdate" && new URLSearchParams(window.l
         if (!tgId) return showError("Missing Telegram ID!");
 
         // Check if wallet is already verified
-        const validationData = await checkTgValidation(tgId);
+        const validationData = await checkLinkedWallet(tgId);
         if (!validationData.success) {
             return showError("❌ Telegram ID is not verified. Please complete the verification process first.");
         }
@@ -114,9 +103,9 @@ async function senddeviceupdateToBackend(tgId, walletAddress, signedMessage) {
 }
 // ✅ Helper Functions
 
-async function checkTgValidation(tgId) {
+async function checkLinkedWallet(tgId) {
     try {
-        const response = await fetch(`/api/check-tgid?tgId=${tgId}`);
+        const response = await fetch(`/api/link/check-tgid?tgId=${tgId}`);
         return await response.json();
     } catch (error) {
         console.error("❌ Error checking validation:", error);
@@ -196,19 +185,15 @@ async function confirmTransaction(signature,connection) {
     }
 }
 
-async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
+async function sendLinkedWalletToBackend(tgId, walletAddress, signedMessage) {
     try {
         const verificationData= {
             tgId,
             walletAddress,
-            signedMessage,
-            hardwareConcurrency: navigator.hardwareConcurrency,
-            deviceMemory: navigator.deviceMemory,
-            language: navigator.language,
-            userAgent: navigator.userAgent
+            signedMessage
         };
 
-        const res = await fetch("/api/verify", {
+        const res = await fetch("/api/link", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(verificationData),
@@ -218,7 +203,7 @@ async function sendVerificationToBackend(tgId, walletAddress, signedMessage) {
         console.log(result)
         if (result.success) {
             window.postMessage({ type: "SET_WALLET_PUBLIC_KEY", publicKey:walletAddress }, "*");
-            updateStatus(`✅ Payment successful!<br>Your wallet is now injected to the <b>MDTT</b> browser extention.<br>TG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b><br> You are advised to safe this message to remember which tg user and wallet you have.`);
+            updateStatus(`✅ Link successful!<br>Your wallet is now injected to the <b>MDTT</b> browser extention.<br>TG User <b>${tgId}</b> has validated the wallet: <b>${walletAddress}</b><br> You are advised to safe this message to remember which tg user and wallet you have.`);
         } else {
             // Show the specific error message returned by the backend
             showError(`❌ Verification failed: ${result.error}`);

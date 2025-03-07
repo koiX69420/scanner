@@ -20,13 +20,11 @@ body {
     align-items: center;
     flex-direction: column; /* Align children vertically */
     justify-content: flex-start; /* Align to the top */
-    min-width: 700px;
     height: 100vh;
 }
 
 /* Main container to hold all content */
 .main-container {
-    width: 700px;
     height: auto;
     padding: 20px;
     box-sizing: border-box;
@@ -36,6 +34,27 @@ body {
     background-color: var(--background-color);
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Service Box Layout */
+.services {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-direction: row;
+
+}
+/* Individual Service Box */
+.service-box {
+    background-color: #1e1e1e;
+    border: 2px solid #ff6600;
+    border-radius: 10px;
+    padding: 20px;
+    width: 48%; /* Makes them sit side by side */
+    box-shadow: 0px 4px 10px rgba(255, 102, 0, 0.3);
+    transition: transform 0.3s ease;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Heading */
@@ -56,7 +75,7 @@ p {
 }
 
 /* Connect Wallet Button */
-#connectWallet {
+button {
     background-color: var(--button-bg);
     color: white;
     padding: 12px 24px;
@@ -67,9 +86,14 @@ p {
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     margin-bottom: var(--spacing);
+    width: 100%;
 }
 
-#connectWallet:hover {
+button#connectWallet{
+    margin-top: 50px;
+}
+
+button:hover {
     background-color: #27ae60;
     transform: scale(1.05);
 }

@@ -4,11 +4,17 @@ const pool = require('../db/db');
 
 const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_HOLDERS = 200
+const BASIC_HOLDERS = 20
 const MAX_HOLDERS_PAGE_SIZE = 40 // 10,20,30,40 MAX holders should be restles dividable by the page
 const MAX_API_CALLS_PER_MINUTE = 3000;
 // we have holders*2+15 calls, we need double the amount as buffer to never error
 const API_CALLS_PER_REQUEST = MAX_HOLDERS * 3 + 30;
 const REFILL_RATE = MAX_API_CALLS_PER_MINUTE / 60; // ≈ 16.67 per second
+
+
+
+const basicCallsPerRequest = 20 * 3 + 30
+const { tokenGate } = require("../bot/util")
 
 let availableApiCalls = MAX_API_CALLS_PER_MINUTE; // Start with full quota
 const {
@@ -98,7 +104,7 @@ function analyzeWallets(top20Data, clusterPercentages) {
 function formatDexUpdates(dexPay) {
   let dp = false
   if (!dexPay.length) return { dp: dp, msg: `🦅 Dexscreener Updates: ❌ No orders found\n\n` };
-  
+
   let ret = `🦅 *Dexscreener Updates*\n` +
     dexPay.map(order => {
       if (order.status === "approved") {
@@ -460,7 +466,7 @@ async function getPumpFunWallet(pools) {
   return foundPool ? { pool_id: foundPool.pool_id, program_id: foundPool.program_id } : {};
 }
 
-async function generateTokenMessage(tokenAddress, isSummary = true) {
+async function generateTokenMessage(tokenAddress, topHolder, isSummary = true) {
   const cacheKey = `${tokenAddress}_${isSummary}`; // Unique key for each token
   const now = Date.now();
 
@@ -469,20 +475,21 @@ async function generateTokenMessage(tokenAddress, isSummary = true) {
     const { timestamp, data } = cache.get(cacheKey);
     if (now - timestamp < 30000) { // 30 seconds
       console.log("Returning cached data");
-      availableApiCalls += API_CALLS_PER_REQUEST;
+      availableApiCalls += topHolder * 3 + 30;
       const metadata = await fetchTokenMetadata(tokenAddress);
       recordTokenScanHistory(tokenAddress, metadata.symbol)
       return data; // Return cached response
     }
   }
 
-  const timeLabel = `generateTokenMessage_${tokenAddress}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
+  const timeLabel = `generateTokenMessage_${tokenAddress}_${topHolder}_${Date.now()}`; // Create a unique label based on the tokenAddress and timestamp
   console.time(timeLabel); // Start the timer with a unique label
 
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
-  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, MAX_HOLDERS, MAX_HOLDERS_PAGE_SIZE);
+  console.log(`top holders: ${topHolder}`)
+  const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, topHolder, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
   const dexPayPromise = fetchDexPay(tokenAddress);
   const poolsPromise = fetchTokenMarkets(tokenAddress);
@@ -543,8 +550,8 @@ async function recordTokenScanHistory(tokenAddress, symbol) {
   }
 }
 
-async function sendMessageWithButton(chatId, tokenAddress) {
-  const { text, replyMarkup } = await generateTokenMessage(tokenAddress);
+async function sendMessageWithButton(chatId, tokenAddress, topHolder) {
+  const { text, replyMarkup } = await generateTokenMessage(tokenAddress, topHolder);
   console.log("Sent message");
   return bot.sendMessage(chatId, text, {
     parse_mode: "Markdown",
@@ -563,41 +570,77 @@ setInterval(() => {
 const globalQueue = []; // Request queue
 const PROCESSING = Symbol("processing"); // Mark requests being processed
 
-async function processGlobalQueue() {
-  if (globalQueue.length === 0) return; // No requests to process
-
-  const { chatId, msg, callbackQuery } = globalQueue[0];
-
-  // Ensure enough API tokens are available before proceeding
-  if (availableApiCalls < API_CALLS_PER_REQUEST) {
-    console.log(`⏳ Not enough API calls available. Waiting... (${availableApiCalls} left and ${API_CALLS_PER_REQUEST} to go)`);
-    setTimeout(processGlobalQueue, 1000); // Check again in 1 sec
-    return;
+async function waitForApiCalls(requiredCalls, delay) {
+  if (availableApiCalls < requiredCalls) {
+    console.log(`⏳ Not enough API calls available. Waiting... (${availableApiCalls} left and ${requiredCalls} to go)`);
+    return new Promise(resolve => setTimeout(resolve, delay)); // Wait and retry
   }
+  return true;
+}
 
-  // Mark the request as being processed
+async function processTierRequest(tier, chatId, msg, callbackQuery, apiCalls) {
+  let topHolder = 20;
+
+  if(tier==="subbed"){
+    topHolder=200
+  }
   if (msg) msg[PROCESSING] = true;
   if (callbackQuery) callbackQuery[PROCESSING] = true;
 
   try {
     // Deduct API calls
-    availableApiCalls -= API_CALLS_PER_REQUEST;
+    availableApiCalls -= apiCalls;
     console.log(`🔄 Processing request... Remaining API calls: ${availableApiCalls}`);
 
-    if (msg) {
-      await processRequest(chatId, msg);
-    }
-    if (callbackQuery) {
-      await processCallbackQuery(chatId, callbackQuery);
-    }
+    if (msg) await processRequest(chatId, msg, topHolder);
+    if (callbackQuery) await processCallbackQuery(chatId, callbackQuery, topHolder);
   } catch (error) {
     console.error("❌ Error processing request:", error.message);
   }
+}
 
-  // Remove processed request from queue
-  globalQueue.shift();
+async function processGlobalQueue() {
+  if (globalQueue.length === 0) return; // No requests to process
+
+  const { chatId, msg, tier, callbackQuery } = globalQueue[0];
+  console.log(`tier: ${tier}`)
+  if (tier === "na") {
+    bot.sendMessage(chatId, "No wallet linked, please link your wallet to your telegram id with /link", { parse_mode: "Markdown" });
+    globalQueue.shift();
+    return;
+  }else if(tier=="tokengate"){
+    bot.sendMessage(chatId, `You have to hold at least ${process.env.TOKENGATE_AMOUNT} of the ${process.env.TOKEN_ADDRESS} token. If you buy it right now, wait 2 minutes before proceeding to scan.` , { parse_mode: "Markdown" });
+    globalQueue.shift();
+    return;
+  }
+
+  let requiredApiCalls = 0;
+  let apiTier = null;
+
+  // Determine API calls based on the tier
+  if (tier === "basic") {
+    requiredApiCalls = basicCallsPerRequest;
+    apiTier = BASIC_HOLDERS;
+  } else if (tier === "subbed") {
+    requiredApiCalls = API_CALLS_PER_REQUEST;
+    apiTier = MAX_HOLDERS;
+  }
+
+  // If no valid tier, skip this iteration
+  if (!apiTier) {
+    globalQueue.shift();
+    return;
+  }
+
+  // Wait for the required API calls if not available
+  const canProceed = await waitForApiCalls(requiredApiCalls, 1000);
+  if (!canProceed) return processGlobalQueue(); // Try again after waiting
+
+  // Process the request based on the tier
+  await processTierRequest(tier, chatId, msg, callbackQuery, requiredApiCalls);
 
   // Process the next request
+  globalQueue.shift();
   processGlobalQueue();
 }
 
@@ -635,19 +678,44 @@ bot.on("message", async (msg) => {
   // Update user cooldown timestamp
   userCooldowns.set(chatId, now);
 
-  // Add to queue and process if it's the first request
-  globalQueue.push({ chatId, msg });
+  const tier = await checkTier(msg.from.id)
+  console.log("Tier")
+  console.log(tier)
+  globalQueue.push({ chatId, msg, tier });
 
   if (globalQueue.length === 1) processGlobalQueue();
 });
 
 bot.on("callback_query", async (query) => {
-  globalQueue.push({ chatId: query.message.chat.id, callbackQuery: query });
+  const tier = await checkTier(query.message.chat.id)
+  globalQueue.push({ chatId: query.message.chat.id, callbackQuery: query, tier: tier });
   if (globalQueue.length === 1) processGlobalQueue();
 });
 
+
+async function checkTier(tgId) {
+  console.log(`tg id from ${tgId}`)
+  let tier = "na"
+  const response = await fetch(`https://mandog.fun/api/link/check-tgid?tgId=${tgId}`);
+  const data = await response.json();
+  if (data.success) {
+    const isTokengated = await tokenGate(data.publicKey)
+    if (isTokengated) {
+      tier = "basic"
+    }else{
+      tier= "tokengate"
+    }
+  }
+  const responseX = await fetch(`https://mandog.fun/api/sub/check-tgid?tgId=${tgId}`);
+  const dataX = await responseX.json();
+  if (dataX.success) {
+    tier = "subbed"
+  }
+  return tier
+}
+
 // Function to process each message (from the global queue)
-async function processRequest(chatId, msg) {
+async function processRequest(chatId, msg, topHolder) {
   const tokenAddress = msg.text.trim();
 
   if (!SOLANA_ADDRESS_REGEX.test(tokenAddress)) {
@@ -658,7 +726,7 @@ async function processRequest(chatId, msg) {
 
   try {
     // Process the request (calling the function to generate message with buttons, etc.)
-    const sentMessage = await sendMessageWithButton(chatId, tokenAddress);
+    const sentMessage = await sendMessageWithButton(chatId, tokenAddress, topHolder);
     await bot.deleteMessage(chatId, loadingMessage.message_id);
     console.log(`📤 Sent data to user for token: ${tokenAddress}`);
   } catch (error) {
@@ -668,7 +736,7 @@ async function processRequest(chatId, msg) {
 }
 
 // Function to handle callback queries (from the global queue)
-async function processCallbackQuery(chatId, query) {
+async function processCallbackQuery(chatId, query, topHolder) {
   const data = query.data;
   const messageId = query.message.message_id;
 
@@ -692,7 +760,7 @@ async function processCallbackQuery(chatId, query) {
       });
 
       // Generate the token message with buttons after processing
-      const { text, replyMarkup } = await generateTokenMessage(tokenAddress, isSummary);
+      const { text, replyMarkup } = await generateTokenMessage(tokenAddress, topHolder, isSummary);
       bot.editMessageText(text, {
         chat_id: chatId,
         message_id: messageId,

@@ -857,7 +857,6 @@ async function makeApiCall(url) {
     const apiKey = getNextApiKey(); // Get next available API key
 
     const response = await fetch(url, { method: "GET", headers: { token: apiKey } });
-
     if (!response.ok) {
       const responseText = await response.text();
       console.error(`❌ Failed to fetch data. Status: ${response.status} Response: ${responseText} ${url}`);
