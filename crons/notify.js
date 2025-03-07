@@ -95,4 +95,4 @@ async function cleanupChatsTable() {
 // // Run every 30 seconds
 cron.schedule('*/59 * * * * *', fetchAndNotifyDexscreenerUpdates);
 // // Schedule cleanup job to run every day at midnight
-// cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
+cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
