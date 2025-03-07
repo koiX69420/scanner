@@ -47,11 +47,11 @@ const {
 
 
 
-function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath, isSummary = false) {
+function formatHolderData(holdersData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath,topHolder, isSummary = false) {
   // if (!holdersData.length) return "❌ No data available for this token.";
   const top20Data = holdersData.slice(0, 20);
   const alertEmojiCount = countSuspiciousWallets(top20Data, clusterPercentages);
-  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath);
+  let message = generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath,topHolder);
   message += generateClusterAnalysis(holdersData, clusterPercentages, isSummary);
 
   if (!isSummary) {
@@ -206,8 +206,14 @@ function formatHolderSummaryIntent(alertCount, bundled, freshBundled, freshNotBu
 }
 
 
-function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath) {
-  let message = `🔹 *MDTT Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
+function generateBaseMessage(tokenAddress, metadata, tokenHistory, alertEmojiCount, dexPay, dexSocials, top20Data, clusterPercentages, devTokenAccounts, ath,topHolder) {
+  let package = ""
+  if(topHolder===20){
+    package="_basic_"
+  }else if(topHolder===200){
+    package="_cracked_"
+  }
+  let message = `🔹 *MDTT* ${package} *Analysis:* [$${metadata.symbol}](https://solscan.io/token/${tokenAddress})\n`;
 
   let twitterIntent = `@MandogMF Analysis: $${metadata.symbol}\n`
   twitterIntent += `${tokenAddress}\n`
@@ -488,7 +494,6 @@ async function generateTokenMessage(tokenAddress, topHolder, isSummary = true) {
   // First, fetch metadata (independent), then fetch tokenHistory (dependent on metadata)
   const metadata = await fetchTokenMetadata(tokenAddress);
   // Fetch remaining data in parallel (which doesn't depend on metadata or tokenHistory)
-  console.log(`top holders: ${topHolder}`)
   const moreHolderDataPromise = getTokenHolderData(tokenAddress, metadata.supply, topHolder, MAX_HOLDERS_PAGE_SIZE);
   const fundingMapPromise = moreHolderDataPromise.then(data => getFundingMap(data));
   const dexPayPromise = fetchDexPay(tokenAddress);
@@ -511,7 +516,7 @@ async function generateTokenMessage(tokenAddress, topHolder, isSummary = true) {
   const dexSocials = await fetchDexSocials(pools);
   // Format the message based on all the fetched data
 
-  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath, isSummary);
+  const formattedMessage = formatHolderData(moreHolderData, tokenAddress, metadata, tokenHistory, clusterPercentages, dexPay, dexSocials, devTokenAccounts, ath, topHolder,isSummary);
 
   console.log("Sent message");
 

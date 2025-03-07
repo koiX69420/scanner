@@ -147,14 +147,12 @@ bot.onText(/\/start(?:\s+(\w+))?/, (msg, match) => {
 
 // Handle /verify command
 bot.onText(/\/subscribe/, (msg) => {
-  console.log(msg)
 
   handleSubscription(msg.chat.id, msg.from.id);
 });
 
 // Handle /verify command
 bot.onText(/\/link/, (msg) => {
-  console.log(msg)
 
   handleLink(msg.chat.id, msg.from.id);
 });
