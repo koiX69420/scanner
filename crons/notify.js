@@ -1,7 +1,10 @@
 const bot = require("../tg/tg");
 const pool = require('../db/db');
 const cron = require('node-cron');
-
+const {
+    fetchDexPay,
+    fetchDexSocials
+} = require('../bot/dexScreenerApi');
 async function fetchAndNotifyDexscreenerUpdates() {
     const client = await pool.connect();
     try {
@@ -11,7 +14,7 @@ async function fetchAndNotifyDexscreenerUpdates() {
         const url = `https://api.dexscreener.com/token-profiles/latest/v1`;
         const response = await fetch(url);
         const data = await response.json();
-
+        console.log(data)
         if (Array.isArray(data) && data.length > 0) {
             const solanaTokens = data.filter(token => token.chainId === "solana");
 
@@ -26,6 +29,18 @@ async function fetchAndNotifyDexscreenerUpdates() {
 
                 // Send a notification to each user tracking the token
                 for (const { chat_id } of tokensWithUpdates.rows) {
+                    // Fetch token payment details
+                    const paymentData = await fetchDexPay(tokenAddress);
+
+                    // Check if there's an approved tokenProfile within the last 10 minutes
+                    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+                    const isRecentApproval = paymentData.some(
+                        entry => entry.type === 'tokenProfile' &&
+                            entry.status === 'approved' &&
+                            entry.paymentTimestamp >= tenMinutesAgo
+                    );
+
+                    if (!isRecentApproval) continue; // Skip if no recent approval
                     await sendTelegramMessage(chat_id, `🚀 Dex paid for CA: ${tokenAddress} ${url}`);
                     // Delete the user entry after notifying
                     await client.query(`
@@ -78,6 +93,6 @@ async function cleanupChatsTable() {
 }
 
 // // Run every 30 seconds
-// cron.schedule('*/30 * * * * *', fetchAndNotifyDexscreenerUpdates);
+cron.schedule('*/59 * * * * *', fetchAndNotifyDexscreenerUpdates);
 // // Schedule cleanup job to run every day at midnight
 // cron.schedule('0 0 * * *', cleanupChatsTable); // Runs daily at midnight
